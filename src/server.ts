@@ -1,9 +1,13 @@
-import express from "express";
+import express, { Application } from "express";
 
-const app = express();
+import apiRouter from "./routes/api";
 
-app.get("/", (req, res) => {
-  res.send("Hello world");
-});
+const app: Application = express();
+
+//
+app.use(express.json());
+
+//routes
+app.use("/api/firewall", apiRouter);
 
 export default app;
