@@ -9,6 +9,6 @@ const apiRouter = express.Router();
 apiRouter.use("/ip", ipRouter);
 apiRouter.use("/url", urlRouter);
 apiRouter.use("/port", portRouter);
-apiRouter.use("/rules", rulesRouter);
+apiRouter.use("/rule", rulesRouter);
 
 export default apiRouter;
