@@ -1,6 +1,7 @@
 import sequelize from "../db/DbSetup";
 import Url from "../models/Url";
 import { Op } from "sequelize";
+import { updateList } from "../controllers/RulesController";
 
 export const insertUrlList = async (
   urlList: string[],
@@ -82,6 +83,44 @@ export const getAllUrls = async () => {
       whitelist,
     };
   } catch (err) {
+    throw err;
+  }
+};
+
+export const updateUrls = async (urls: updateList) => {
+  if (Object.keys(urls).length === 0) return [];
+
+  const transaction = await sequelize.transaction();
+  try {
+    const found = await Url.findAll({
+      where: { id: urls.ids, mode: urls.mode },
+      attributes: ["id"],
+      transaction,
+      raw: true,
+    });
+
+    if (found.length !== urls.ids.length) {
+      throw new Error("One or more of the requested url ids not found");
+    }
+    await Url.update(
+      { active: urls.active },
+      { where: { id: urls.ids, mode: urls.mode }, transaction }
+    );
+
+    const result = await Url.findAll({
+      where: {
+        id: urls.ids,
+        mode: urls.mode,
+      },
+      raw: true,
+      attributes: { exclude: ["mode"] },
+      transaction,
+    });
+    await transaction.commit();
+    return result;
+  } catch (err) {
+    console.error(err);
+    await transaction.rollback();
     throw err;
   }
 };

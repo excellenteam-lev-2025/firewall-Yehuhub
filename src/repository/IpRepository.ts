@@ -1,6 +1,7 @@
 import sequelize from "../db/DbSetup";
 import Ip from "../models/Ip";
 import { Op, where } from "sequelize";
+import { updateList } from "../controllers/RulesController";
 
 export const insertIpList = async (
   ipList: string[],
@@ -82,6 +83,45 @@ export const getAllIps = async () => {
       whitelist,
     };
   } catch (err) {
+    throw err;
+  }
+};
+
+export const updateIps = async (ips: updateList) => {
+  if (Object.keys(ips).length === 0) return [];
+
+  const transaction = await sequelize.transaction();
+  try {
+    const found = await Ip.findAll({
+      where: { id: ips.ids, mode: ips.mode },
+      attributes: ["id"],
+      transaction,
+      raw: true,
+    });
+
+    if (found.length !== ips.ids.length) {
+      throw new Error("One or more of the requested ip ids not found");
+    }
+    await Ip.update(
+      { active: ips.active },
+      { where: { id: ips.ids, mode: ips.mode }, transaction }
+    );
+
+    const result = await Ip.findAll({
+      where: {
+        id: ips.ids,
+        mode: ips.mode,
+      },
+      raw: true,
+      attributes: { exclude: ["mode"] },
+      transaction,
+    });
+
+    await transaction.commit();
+    return result;
+  } catch (err) {
+    console.error(err);
+    await transaction.rollback();
     throw err;
   }
 };

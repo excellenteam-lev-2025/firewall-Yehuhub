@@ -1,6 +1,7 @@
 import sequelize from "../db/DbSetup";
 import Port from "../models/Port";
 import { Op } from "sequelize";
+import { updateList } from "../controllers/RulesController";
 
 export const insertPortList = async (
   portList: number[],
@@ -82,6 +83,43 @@ export const getAllPorts = async () => {
       whitelist,
     };
   } catch (err) {
+    throw err;
+  }
+};
+
+export const updatePorts = async (ports: updateList) => {
+  if (Object.keys(ports).length === 0) return [];
+  const transaction = await sequelize.transaction();
+  try {
+    const found = await Port.findAll({
+      where: { id: ports.ids, mode: ports.mode },
+      attributes: ["id"],
+      transaction,
+      raw: true,
+    });
+
+    if (found.length !== ports.ids.length) {
+      throw new Error("One or more of the requested port ids not found");
+    }
+    await Port.update(
+      { active: ports.active },
+      { where: { id: ports.ids, mode: ports.mode }, transaction }
+    );
+
+    const result = await Port.findAll({
+      where: {
+        id: ports.ids,
+        mode: ports.mode,
+      },
+      raw: true,
+      attributes: { exclude: ["mode"] },
+      transaction,
+    });
+    await transaction.commit();
+    return result;
+  } catch (err) {
+    console.error(err);
+    await transaction.rollback();
     throw err;
   }
 };
