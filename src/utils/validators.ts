@@ -1,20 +1,24 @@
-export const validateIp = (ip: string): Boolean => {
-  return /^(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)(\.(25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)){3}$/.test(
-    ip
-  );
+import validator from "validator";
+
+export const validateIp = (ip: string): boolean => {
+  return validator.isIP(ip, 4);
 };
 
-export const validateUrl = (url: string): Boolean => {
-  return /^(?!:\/\/)([a-zA-Z0-9-_]+\.)+[a-zA-Z]{2,}$/.test(url);
+export const validateUrl = (url: string): boolean => {
+  return validator.isFQDN(url, {
+    require_tld: true,
+    allow_underscores: false,
+    allow_trailing_dot: false,
+  });
 };
 
-export const validateMode = (mode: string): Boolean => {
+export const validateMode = (mode: string): boolean => {
   if (!mode) {
     return false;
   }
   return ["blacklist", "whitelist"].includes(mode.toLowerCase());
 };
 
-export const validatePort = (port: number): Boolean => {
-  return 1 <= port && port <= 65535;
+export const validatePort = (port: number): boolean => {
+  return validator.isPort(port.toString());
 };
