@@ -19,3 +19,7 @@ export const validateMode = (mode: string): Boolean => {
   }
   return modes.includes(mode.toLowerCase());
 };
+
+export const validatePort = (port: number): Boolean => {
+  return 1 <= port && port <= 65535;
+};

@@ -1,6 +1,6 @@
 import sequelize from "../db/DbSetup";
 import Ip from "../models/Ip";
-import { Op } from "sequelize";
+import { Op, where } from "sequelize";
 
 export const insertIpList = async (
   ipList: string[],
@@ -56,4 +56,32 @@ export const doesIpExists = async (
     where: { value: ip, mode: mode },
   });
   return found !== null;
+};
+
+export const getAllIps = async () => {
+  try {
+    const [blacklist, whitelist] = await Promise.all([
+      Ip.findAll({
+        where: {
+          mode: "blacklist",
+        },
+        raw: true,
+        attributes: { exclude: ["mode", "active"] },
+      }),
+
+      Ip.findAll({
+        where: {
+          mode: "whitelist",
+        },
+        raw: true,
+        attributes: { exclude: ["mode", "active"] },
+      }),
+    ]);
+    return {
+      blacklist,
+      whitelist,
+    };
+  } catch (err) {
+    throw err;
+  }
 };

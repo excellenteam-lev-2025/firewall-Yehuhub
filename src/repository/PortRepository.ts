@@ -1,21 +1,21 @@
 import sequelize from "../db/DbSetup";
-import Url from "../models/Url";
+import Port from "../models/Port";
 import { Op } from "sequelize";
 
-export const insertUrlList = async (
-  urlList: string[],
+export const insertPortList = async (
+  portList: number[],
   mode: string
 ): Promise<void> => {
   const transaction = await sequelize.transaction();
 
   try {
-    const records = urlList.map((url) => ({
-      value: url,
+    const records = portList.map((port) => ({
+      value: port,
       mode: mode,
       active: true,
     }));
 
-    await Url.bulkCreate(records, {
+    await Port.bulkCreate(records, {
       validate: true,
       transaction,
     });
@@ -27,16 +27,16 @@ export const insertUrlList = async (
   }
 };
 
-export const deleteUrlList = async (
-  urlList: string[],
+export const deletePortList = async (
+  portList: number[],
   mode: string
 ): Promise<void> => {
   const transaction = await sequelize.transaction();
   try {
-    await Url.destroy({
+    await Port.destroy({
       where: {
-        value: { [Op.in]: urlList },
-        mode: mode, // not strictly necessary as we already validated that in doesUrlExists
+        value: { [Op.in]: portList },
+        mode: mode,
       },
       transaction,
     });
@@ -48,20 +48,20 @@ export const deleteUrlList = async (
   }
 };
 
-export const doesUrlExists = async (
-  url: string,
+export const doesPortExists = async (
+  port: number,
   mode: string
 ): Promise<Boolean> => {
-  const found = await Url.findOne({
-    where: { value: url, mode: mode },
+  const found = await Port.findOne({
+    where: { value: port, mode: mode },
   });
   return found !== null;
 };
 
-export const getAllUrls = async () => {
+export const getAllPorts = async () => {
   try {
     const [blacklist, whitelist] = await Promise.all([
-      Url.findAll({
+      Port.findAll({
         where: {
           mode: "blacklist",
         },
@@ -69,7 +69,7 @@ export const getAllUrls = async () => {
         attributes: { exclude: ["mode", "active"] },
       }),
 
-      Url.findAll({
+      Port.findAll({
         where: {
           mode: "whitelist",
         },
