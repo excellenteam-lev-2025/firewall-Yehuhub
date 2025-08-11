@@ -2,6 +2,7 @@ import express, { Application } from "express";
 import apiRouter from "./routes/api";
 import sequelize from "./services/DbService";
 import { config } from "./config/env";
+import "./config/logger";
 
 const app: Application = express();
 
