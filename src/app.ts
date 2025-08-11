@@ -1,7 +1,7 @@
 import express, { Application } from "express";
 
 import apiRouter from "./routes/api";
-import sequelize from "./db/DbSetup";
+import sequelize from "./services/DbService";
 
 const app: Application = express();
 

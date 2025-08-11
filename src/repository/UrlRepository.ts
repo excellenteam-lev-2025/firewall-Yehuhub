@@ -1,4 +1,4 @@
-import sequelize from "../db/DbSetup";
+import sequelize from "../services/DbService";
 import Url from "../types/models/Url";
 import { Op } from "sequelize";
 import { updateList } from "../controllers/RulesController";
