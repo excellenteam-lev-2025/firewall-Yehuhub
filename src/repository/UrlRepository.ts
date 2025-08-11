@@ -1,5 +1,5 @@
 import sequelize from "../db/DbSetup";
-import Url from "../models/Url";
+import Url from "../types/models/Url";
 import { Op } from "sequelize";
 import { updateList } from "../controllers/RulesController";
 

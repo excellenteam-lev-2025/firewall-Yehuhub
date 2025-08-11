@@ -1,5 +1,5 @@
 import sequelize from "../db/DbSetup";
-import Port from "../models/Port";
+import Port from "../types/models/Port";
 import { Op } from "sequelize";
 import { updateList } from "../controllers/RulesController";
 

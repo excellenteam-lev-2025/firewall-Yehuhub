@@ -1,5 +1,5 @@
 import { DataTypes, Model } from "sequelize";
-import sequelize from "../db/DbSetup";
+import sequelize from "../../db/DbSetup";
 
 class Port extends Model {
   public id!: number;

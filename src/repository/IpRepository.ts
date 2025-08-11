@@ -1,5 +1,5 @@
 import sequelize from "../db/DbSetup";
-import Ip from "../models/Ip";
+import Ip from "../types/models/Ip";
 import { Op, where } from "sequelize";
 import { updateList } from "../controllers/RulesController";
 
