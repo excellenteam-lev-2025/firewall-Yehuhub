@@ -1,7 +1,7 @@
 import express, { Application } from "express";
-
 import apiRouter from "./routes/api";
 import sequelize from "./services/DbService";
+import { config } from "./config/env";
 
 const app: Application = express();
 
@@ -17,8 +17,8 @@ app.use("/api/firewall", apiRouter);
 
     await sequelize.sync();
 
-    app.listen(3000, () => {
-      console.log("App started on port 3000");
+    app.listen(config.env.PORT, () => {
+      console.log(`App started on port ${config.env.PORT}`);
     });
   } catch (err) {
     console.log("Unable to connect to db: ", err);
