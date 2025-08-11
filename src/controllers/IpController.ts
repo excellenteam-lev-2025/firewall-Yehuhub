@@ -5,6 +5,7 @@ import {
   doesIpExists,
   deleteIpList,
 } from "../repository/IpRepository";
+import { StatusCodes } from "http-status-codes";
 
 export const validateIpList = (
   req: Request,
@@ -15,7 +16,7 @@ export const validateIpList = (
 
   if (!Array.isArray(values) || values.length === 0) {
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "'values' must be a non-empty array of IPs" });
   }
 
@@ -23,7 +24,7 @@ export const validateIpList = (
 
   if (invalidIp)
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "One or more IP addresses are invalid" });
 
   next();
@@ -41,18 +42,18 @@ export const addIp = async (
   } catch (err: any) {
     if (err.name === "SequelizeUniqueConstraintError") {
       console.log({ message: "UNIQUE CONSTRAINT ERROR", error: err.name });
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         error: "One or more IP addresses already exist in the db",
       });
     }
     console.log({ message: "DB ERROR", error: err });
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal server error while inserting IP addresses",
     });
   }
 
   return res
-    .status(200)
+    .status(StatusCodes.OK)
     .json({ type: "ip", mode: mode, values: values, status: "success" });
 };
 
@@ -75,19 +76,19 @@ export const removeIp = async (
 
     if (ipNotExists) {
       return res
-        .status(400)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more IP addresses not found in the database" });
     }
 
     await deleteIpList(values, mode);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal server error while inserting IP addresses",
     });
   }
 
   return res
-    .status(200)
+    .status(StatusCodes.OK)
     .json({ type: "ip", mode: mode, values: values, status: "success" });
 };

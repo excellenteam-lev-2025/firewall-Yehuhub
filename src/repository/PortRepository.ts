@@ -1,7 +1,8 @@
 import sequelize from "../services/DbService";
 import Port from "../types/models/Port";
 import { Op } from "sequelize";
-import { updateList } from "../controllers/RulesController";
+import { updateList } from "../types/interfaces/UpdateList";
+import { config } from "../config/env";
 
 export const insertPortList = async (
   portList: number[],
@@ -64,7 +65,7 @@ export const getAllPorts = async () => {
     const [blacklist, whitelist] = await Promise.all([
       Port.findAll({
         where: {
-          mode: "blacklist",
+          mode: config.constants.blacklist,
         },
         raw: true,
         attributes: { exclude: ["mode", "active"] },
@@ -72,7 +73,7 @@ export const getAllPorts = async () => {
 
       Port.findAll({
         where: {
-          mode: "whitelist",
+          mode: config.constants.whitelist,
         },
         raw: true,
         attributes: { exclude: ["mode", "active"] },

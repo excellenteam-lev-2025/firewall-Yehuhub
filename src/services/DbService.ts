@@ -1,6 +1,8 @@
-const dbURL = "postgres://admin:Aa123456@localhost:5432/firewalldb"; //this needs to be in a .env file
 import { Sequelize } from "sequelize";
+import { config } from "../config/env";
 
-const sequelize = new Sequelize(dbURL, { dialect: "postgres" });
+const sequelize = new Sequelize(config.env.DATABASE_URL, {
+  dialect: "postgres",
+});
 
 export default sequelize;

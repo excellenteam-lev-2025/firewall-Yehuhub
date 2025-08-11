@@ -1,7 +1,8 @@
 import sequelize from "../services/DbService";
 import Url from "../types/models/Url";
 import { Op } from "sequelize";
-import { updateList } from "../controllers/RulesController";
+import { updateList } from "../types/interfaces/UpdateList";
+import { config } from "../config/env";
 
 export const insertUrlList = async (
   urlList: string[],
@@ -37,7 +38,7 @@ export const deleteUrlList = async (
     await Url.destroy({
       where: {
         value: { [Op.in]: urlList },
-        mode: mode, // not strictly necessary as we already validated that in doesUrlExists
+        mode: mode,
       },
       transaction,
     });
@@ -64,7 +65,7 @@ export const getAllUrls = async () => {
     const [blacklist, whitelist] = await Promise.all([
       Url.findAll({
         where: {
-          mode: "blacklist",
+          mode: config.constants.blacklist,
         },
         raw: true,
         attributes: { exclude: ["mode", "active"] },
@@ -72,7 +73,7 @@ export const getAllUrls = async () => {
 
       Url.findAll({
         where: {
-          mode: "whitelist",
+          mode: config.constants.whitelist,
         },
         raw: true,
         attributes: { exclude: ["mode", "active"] },

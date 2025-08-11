@@ -5,6 +5,7 @@ import {
   doesUrlExists,
   deleteUrlList,
 } from "../repository/UrlRepository";
+import { StatusCodes } from "http-status-codes";
 
 export const validateUrlList = (
   req: Request,
@@ -15,14 +16,16 @@ export const validateUrlList = (
 
   if (!Array.isArray(values) || values.length === 0) {
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "'values' must be a non-empty array of URLs" });
   }
 
   const invalidUrl = values.find((url: string) => !validateUrl(url));
 
   if (invalidUrl)
-    return res.status(400).json({ error: "One or more URLs are invalid" });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "One or more URLs are invalid" });
 
   next();
 };
@@ -39,18 +42,18 @@ export const addUrls = async (
   } catch (err: any) {
     if (err.name === "SequelizeUniqueConstraintError") {
       console.log({ message: "UNIQUE CONSTRAINT ERROR", error: err.name });
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         error: "One or more URLs already exist in the db",
       });
     }
     console.log({ message: "DB ERROR", error: err });
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal server error while inserting URLs",
     });
   }
 
   return res
-    .status(200)
+    .status(StatusCodes.OK)
     .json({ type: "url", mode: mode, values: values, status: "success" });
 };
 
@@ -73,19 +76,19 @@ export const removeUrls = async (
 
     if (urlNotExists) {
       return res
-        .status(400)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more URLs not found in the database" });
     }
 
     await deleteUrlList(values, mode);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal server error while inserting URLs",
     });
   }
 
   return res
-    .status(200)
+    .status(StatusCodes.OK)
     .json({ type: "url", mode: mode, values: values, status: "success" });
 };

@@ -2,12 +2,9 @@ import { Request, Response, NextFunction } from "express";
 import { getAllIps, updateIps } from "../repository/IpRepository";
 import { getAllUrls, updateUrls } from "../repository/UrlRepository";
 import { getAllPorts, updatePorts } from "../repository/PortRepository";
-
-export interface updateList {
-  ids: number[];
-  mode: "blacklist" | "whitelist";
-  active: boolean;
-}
+import { updateList } from "../types/interfaces/UpdateList";
+import { config } from "../config/env";
+import { StatusCodes } from "http-status-codes";
 
 const validateIdList = (idList: unknown): boolean => {
   console.log(idList);
@@ -20,7 +17,8 @@ const validateIdList = (idList: unknown): boolean => {
 const validateMode = (mode: unknown): boolean => {
   return (
     typeof mode === "string" &&
-    (mode.toLowerCase() === "blacklist" || mode.toLowerCase() === "whitelist")
+    (mode.toLowerCase() === config.constants.blacklist ||
+      mode.toLowerCase() === config.constants.whitelist)
   );
 };
 
@@ -48,9 +46,11 @@ export const getAllRules = async (
     const urls = await getAllUrls();
     const ports = await getAllPorts();
 
-    return res.status(200).json({ ips, urls, ports });
+    return res.status(StatusCodes.OK).json({ ips, urls, ports });
   } catch (err) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: "Internal Server Error" });
   }
 };
 
@@ -63,17 +63,17 @@ export const toggleRuleStatus = async (
 
   if (urls && !validateParameters(urls)) {
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "invalid url rule activation parameters" });
   }
   if (ips && !validateParameters(ips)) {
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "invalid ips rule activation parameters" });
   }
   if (ports && !validateParameters(ports)) {
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "invalid ports rule activation parameters" });
   }
 
@@ -81,7 +81,7 @@ export const toggleRuleStatus = async (
     const updatedUrls = await updateUrls(urls);
     const updatedPorts = await updatePorts(ports);
     const updatedIps = await updateIps(ips);
-    return res.status(200).json({
+    return res.status(StatusCodes.OK).json({
       updatedUrls,
       updatedPorts,
       updatedIps,
@@ -89,8 +89,10 @@ export const toggleRuleStatus = async (
   } catch (err) {
     console.log(err);
     if (err instanceof Error) {
-      res.status(400).json({ error: err.message });
+      res.status(StatusCodes.BAD_REQUEST).json({ error: err.message });
     }
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: "Internal Server Error" });
   }
 };

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import validator from "validator";
+import validator, { blacklist, whitelist } from "validator";
 import dotenv from "dotenv";
 dotenv.config();
 
@@ -35,6 +35,10 @@ export const config = {
   env: {
     ENV,
     PORT,
-    DATABASE: ENV === "dev" ? DEV_DATABASE : PRODUCTION_DATABASE,
+    DATABASE_URL: ENV === "dev" ? DEV_DATABASE : PRODUCTION_DATABASE,
+  },
+  constants: {
+    blacklist: "blacklist",
+    whitelist: "whitelist",
   },
 };

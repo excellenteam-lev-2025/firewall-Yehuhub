@@ -1,7 +1,8 @@
 import sequelize from "../services/DbService";
 import Ip from "../types/models/Ip";
-import { Op, where } from "sequelize";
-import { updateList } from "../controllers/RulesController";
+import { Op } from "sequelize";
+import { updateList } from "../types/interfaces/UpdateList";
+import { config } from "../config/env";
 
 export const insertIpList = async (
   ipList: string[],
@@ -37,7 +38,7 @@ export const deleteIpList = async (
     await Ip.destroy({
       where: {
         value: { [Op.in]: ipList },
-        mode: mode, // not strictly necessary as we already validated that in doesIpExists
+        mode: mode,
       },
       transaction,
     });
@@ -64,7 +65,7 @@ export const getAllIps = async () => {
     const [blacklist, whitelist] = await Promise.all([
       Ip.findAll({
         where: {
-          mode: "blacklist",
+          mode: config.constants.blacklist,
         },
         raw: true,
         attributes: { exclude: ["mode", "active"] },
@@ -72,7 +73,7 @@ export const getAllIps = async () => {
 
       Ip.findAll({
         where: {
-          mode: "whitelist",
+          mode: config.constants.whitelist,
         },
         raw: true,
         attributes: { exclude: ["mode", "active"] },

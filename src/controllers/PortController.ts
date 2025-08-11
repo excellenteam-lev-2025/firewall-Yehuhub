@@ -5,6 +5,7 @@ import {
   doesPortExists,
   insertPortList,
 } from "../repository/PortRepository";
+import { StatusCodes } from "http-status-codes";
 
 export const validatePortList = (
   req: Request,
@@ -15,14 +16,16 @@ export const validatePortList = (
 
   if (!Array.isArray(values) || values.length === 0) {
     return res
-      .status(400)
+      .status(StatusCodes.BAD_REQUEST)
       .json({ error: "'values' must be a non-empty array of IPs" });
   }
 
   const invalidPort = values.find((port: number) => !validatePort(port));
 
   if (invalidPort)
-    return res.status(400).json({ error: "One or more Ports are invalid" });
+    return res
+      .status(StatusCodes.BAD_REQUEST)
+      .json({ error: "One or more Ports are invalid" });
 
   next();
 };
@@ -39,18 +42,18 @@ export const addPorts = async (
   } catch (err: any) {
     if (err.name === "SequelizeUniqueConstraintError") {
       console.log({ message: "UNIQUE CONSTRAINT ERROR", error: err.name });
-      return res.status(400).json({
+      return res.status(StatusCodes.BAD_REQUEST).json({
         error: "One or more Ports already exist in the db",
       });
     }
     console.log({ message: "DB ERROR", error: err });
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal server error while inserting Ports",
     });
   }
 
   return res
-    .status(200)
+    .status(StatusCodes.OK)
     .json({ type: "port", mode: mode, values: values, status: "success" });
 };
 
@@ -73,19 +76,19 @@ export const removePorts = async (
 
     if (portNotExists) {
       return res
-        .status(400)
+        .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more Ports not found in the database" });
     }
 
     await deletePortList(values, mode);
   } catch (err) {
     console.log(err);
-    return res.status(500).json({
+    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
       error: "Internal server error while inserting Ports",
     });
   }
 
   return res
-    .status(200)
+    .status(StatusCodes.OK)
     .json({ type: "port", mode: mode, values: values, status: "success" });
 };

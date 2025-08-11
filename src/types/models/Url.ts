@@ -1,5 +1,6 @@
 import { DataTypes, Model } from "sequelize";
 import sequelize from "../../services/DbService";
+import { config } from "../../config/env";
 
 class Url extends Model {
   public id!: number;
@@ -20,7 +21,7 @@ Url.init(
       allowNull: false,
       validate: {
         isIn: {
-          args: [["blacklist", "whitelist"]],
+          args: [[config.constants.blacklist, config.constants.whitelist]],
           msg: "'mode' must be either 'blacklist' or 'whitelist'",
         },
       },
