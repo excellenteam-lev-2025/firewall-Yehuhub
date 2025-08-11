@@ -1,5 +1,14 @@
-import app from "./server";
+import express, { Application } from "express";
+
+import apiRouter from "./routes/api";
 import sequelize from "./db/DbSetup";
+
+const app: Application = express();
+
+app.use(express.json());
+
+//routes
+app.use("/api/firewall", apiRouter);
 
 (async () => {
   try {
@@ -12,7 +21,9 @@ import sequelize from "./db/DbSetup";
       console.log("App started on port 3000");
     });
   } catch (err) {
-    console.log("unable to connect to db: ", err);
+    console.log("Unable to connect to db: ", err);
     process.exit(1);
   }
 })();
+
+export default app;
