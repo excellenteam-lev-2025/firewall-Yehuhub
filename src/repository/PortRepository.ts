@@ -1,126 +1,106 @@
-import sequelize from "../services/DbService";
-import Port from "../types/models/Port";
-import { Op } from "sequelize";
-import { updateList } from "../types/interfaces/UpdateList";
+import { db } from "../services/DbService";
 import { config } from "../config/env";
+import { portTable } from "../db/schema";
+import { ZodError } from "zod";
+import { eq, and, inArray } from "drizzle-orm";
+import { portInsertSchema, PortListInput } from "../schemas/PortSchema";
 
-export const insertPortList = async (
-  portList: number[],
-  mode: string
-): Promise<void> => {
-  const transaction = await sequelize.transaction();
-
+export const insertPortList = async (data: PortListInput): Promise<void> => {
+  const { values, mode } = data;
   try {
-    const records = portList.map((port) => ({
-      value: port,
-      mode: mode,
-      active: true,
-    }));
-
-    await Port.bulkCreate(records, {
-      validate: true,
-      transaction,
+    const records = values.map((ip) => {
+      return portInsertSchema.parse({
+        value: ip,
+        mode,
+      });
     });
-
-    await transaction.commit();
+    await db.transaction(async (tx) => {
+      await tx.insert(portTable).values(records);
+    });
   } catch (err) {
-    await transaction.rollback();
+    if (err instanceof ZodError) {
+      console.error("Validation error: ", err.issues);
+    }
     throw err;
   }
 };
 
-export const deletePortList = async (
-  portList: number[],
-  mode: string
-): Promise<void> => {
-  const transaction = await sequelize.transaction();
+export const deletePortList = async (data: PortListInput): Promise<void> => {
+  const { values, mode } = data;
   try {
-    await Port.destroy({
-      where: {
-        value: { [Op.in]: portList },
-        mode: mode,
-      },
-      transaction,
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(portTable)
+        .where(and(inArray(portTable.value, values), eq(portTable.mode, mode)));
     });
-
-    await transaction.commit();
   } catch (err) {
-    await transaction.rollback();
+    if (err instanceof ZodError) {
+      console.error("Validation error: ", err.issues);
+    }
     throw err;
   }
 };
 
-export const doesPortExists = async (
-  port: number,
-  mode: string
-): Promise<Boolean> => {
-  const found = await Port.findOne({
-    where: { value: port, mode: mode },
-  });
-  return found !== null;
+export const getAllExistingPorts = async (data: PortListInput) => {
+  const found = await db
+    .select({ value: portTable.value, mode: portTable.mode })
+    .from(portTable)
+    .where(
+      and(inArray(portTable.value, data.values), eq(portTable.mode, data.mode))
+    );
+  return found;
 };
 
 export const getAllPorts = async () => {
-  try {
-    const [blacklist, whitelist] = await Promise.all([
-      Port.findAll({
-        where: {
-          mode: config.constants.blacklist,
-        },
-        raw: true,
-        attributes: { exclude: ["mode", "active"] },
-      }),
-
-      Port.findAll({
-        where: {
-          mode: config.constants.whitelist,
-        },
-        raw: true,
-        attributes: { exclude: ["mode", "active"] },
-      }),
-    ]);
-    return {
-      blacklist,
-      whitelist,
-    };
-  } catch (err) {
-    throw err;
-  }
+  const [blacklist, whitelist] = await Promise.all([
+    db
+      .select({ id: portTable.id, value: portTable.value })
+      .from(portTable)
+      .where(eq(portTable.mode, config.constants.blacklist)),
+    db
+      .select({ id: portTable.id, value: portTable.value })
+      .from(portTable)
+      .where(eq(portTable.mode, config.constants.whitelist)),
+  ]);
+  return {
+    blacklist,
+    whitelist,
+  };
 };
 
-export const updatePorts = async (ports: updateList) => {
-  if (Object.keys(ports).length === 0) return [];
-  const transaction = await sequelize.transaction();
-  try {
-    const found = await Port.findAll({
-      where: { id: ports.ids, mode: ports.mode },
-      attributes: ["id"],
-      transaction,
-      raw: true,
-    });
+// export const updatePorts = async (ports: updateList) => {
+//   if (Object.keys(ports).length === 0) return [];
+//   const transaction = await sequelize.transaction();
+//   try {
+//     const found = await Port.findAll({
+//       where: { id: ports.ids, mode: ports.mode },
+//       attributes: ["id"],
+//       transaction,
+//       raw: true,
+//     });
 
-    if (found.length !== ports.ids.length) {
-      throw new Error("One or more of the requested port ids not found");
-    }
-    await Port.update(
-      { active: ports.active },
-      { where: { id: ports.ids, mode: ports.mode }, transaction }
-    );
+//     if (found.length !== ports.ids.length) {
+//       throw new Error("One or more of the requested port ids not found");
+//     }
+//     await Port.update(
+//       { active: ports.active },
+//       { where: { id: ports.ids, mode: ports.mode }, transaction }
+//     );
 
-    const result = await Port.findAll({
-      where: {
-        id: ports.ids,
-        mode: ports.mode,
-      },
-      raw: true,
-      attributes: { exclude: ["mode"] },
-      transaction,
-    });
-    await transaction.commit();
-    return result;
-  } catch (err) {
-    console.error(err);
-    await transaction.rollback();
-    throw err;
-  }
-};
+//     const result = await Port.findAll({
+//       where: {
+//         id: ports.ids,
+//         mode: ports.mode,
+//       },
+//       raw: true,
+//       attributes: { exclude: ["mode"] },
+//       transaction,
+//     });
+//     await transaction.commit();
+//     return result;
+//   } catch (err) {
+//     console.error(err);
+//     await transaction.rollback();
+//     throw err;
+//   }
+// };

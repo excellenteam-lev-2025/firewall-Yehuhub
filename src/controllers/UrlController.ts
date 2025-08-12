@@ -1,55 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-import { validateUrl } from "../utils/validators";
 import {
   insertUrlList,
-  doesUrlExists,
   deleteUrlList,
+  getAllExistingUrls,
 } from "../repository/UrlRepository";
 import { StatusCodes } from "http-status-codes";
+import { UrlListInput, urlListSchema } from "../schemas/UrlSchema";
 
 export const validateUrlList = (
-  req: Request,
+  req: Request<{}, {}, UrlListInput>,
   res: Response,
   next: NextFunction
 ): void | Response => {
-  const { values } = req.body;
-
-  if (!Array.isArray(values) || values.length === 0) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "'values' must be a non-empty array of URLs" });
+  try {
+    urlListSchema.parse(req.body);
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  const invalidUrl = values.find((url: string) => !validateUrl(url));
-
-  if (invalidUrl)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "One or more URLs are invalid" });
-
-  next();
 };
 
 export const addUrls = async (
-  req: Request,
+  req: Request<{}, {}, UrlListInput>,
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
   const { mode, values } = req.body;
-
   try {
-    await insertUrlList(values, mode);
-  } catch (err: any) {
-    if (err.name === "SequelizeUniqueConstraintError") {
-      console.log({ message: "UNIQUE CONSTRAINT ERROR", error: err.name });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        error: "One or more URLs already exist in the db",
-      });
-    }
-    console.log({ message: "DB ERROR", error: err });
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while inserting URLs",
-    });
+    await insertUrlList({ mode, values });
+  } catch (err) {
+    next(err);
   }
 
   return res
@@ -58,37 +38,31 @@ export const addUrls = async (
 };
 
 export const removeUrls = async (
-  req: Request,
+  req: Request<{}, {}, UrlListInput>,
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
   const { mode, values } = req.body;
 
   try {
-    const urlExistsResult = await Promise.all(
-      values.map(async (url: string) => ({
-        url: url,
-        exists: await doesUrlExists(url, mode),
-      }))
-    );
-
-    const urlNotExists = urlExistsResult.find((url) => !url.exists);
-
-    if (urlNotExists) {
+    const allExistingIps = await getAllExistingUrls({ mode, values });
+    const existingIps = allExistingIps.map((ip) => ip.value);
+    const ipsNotExisting = values.filter((ip) => !existingIps.includes(ip));
+    if (ipsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more URLs not found in the database" });
+        .json({ error: "One or more IP addresses not found in the database" });
     }
 
-    await deleteUrlList(values, mode);
+    await deleteUrlList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while inserting URLs",
+      error: "Internal server error while removing IP addresses",
     });
   }
 
   return res
     .status(StatusCodes.OK)
-    .json({ type: "url", mode: mode, values: values, status: "success" });
+    .json({ type: "ip", mode: mode, values: values, status: "success" });
 };

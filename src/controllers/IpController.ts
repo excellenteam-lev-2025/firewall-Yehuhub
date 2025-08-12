@@ -1,55 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-import { validateIp } from "../utils/validators";
 import {
   insertIpList,
-  doesIpExists,
   deleteIpList,
+  getAllExistingIps,
 } from "../repository/IpRepository";
 import { StatusCodes } from "http-status-codes";
+import { IpListInput, ipListSchema } from "../schemas/IpSchema";
 
 export const validateIpList = (
-  req: Request,
+  req: Request<{}, {}, IpListInput>,
   res: Response,
   next: NextFunction
 ): void | Response => {
-  const { values } = req.body;
-
-  if (!Array.isArray(values) || values.length === 0) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "'values' must be a non-empty array of IPs" });
+  try {
+    ipListSchema.parse(req.body);
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  const invalidIp = values.find((ip: string) => !validateIp(ip));
-
-  if (invalidIp)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "One or more IP addresses are invalid" });
-
-  next();
 };
 
 export const addIp = async (
-  req: Request,
+  req: Request<{}, {}, IpListInput>,
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
   const { mode, values } = req.body;
-
   try {
-    await insertIpList(values, mode);
-  } catch (err: any) {
-    if (err.name === "SequelizeUniqueConstraintError") {
-      console.log({ message: "UNIQUE CONSTRAINT ERROR", error: err.name });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        error: "One or more IP addresses already exist in the db",
-      });
-    }
-    console.log({ message: "DB ERROR", error: err });
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while inserting IP addresses",
-    });
+    await insertIpList({ mode, values });
+  } catch (err) {
+    next(err);
   }
 
   return res
@@ -58,33 +38,27 @@ export const addIp = async (
 };
 
 export const removeIp = async (
-  req: Request,
+  req: Request<{}, {}, IpListInput>,
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
   const { mode, values } = req.body;
 
   try {
-    const ipExistsResult = await Promise.all(
-      values.map(async (ip: string) => ({
-        ip: ip,
-        exists: await doesIpExists(ip, mode),
-      }))
-    );
-
-    const ipNotExists = ipExistsResult.find((ip) => !ip.exists);
-
-    if (ipNotExists) {
+    const allExistingIps = await getAllExistingIps({ mode, values });
+    const existingIps = allExistingIps.map((ip) => ip.value);
+    const ipsNotExisting = values.filter((ip) => !existingIps.includes(ip));
+    if (ipsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more IP addresses not found in the database" });
     }
 
-    await deleteIpList(values, mode);
+    await deleteIpList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while inserting IP addresses",
+      error: "Internal server error while removing IP addresses",
     });
   }
 

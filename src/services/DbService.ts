@@ -1,8 +1,4 @@
-import { Sequelize } from "sequelize";
 import { config } from "../config/env";
+import { drizzle } from "drizzle-orm/node-postgres";
 
-const sequelize = new Sequelize(config.env.DATABASE_URL, {
-  dialect: "postgres",
-});
-
-export default sequelize;
+export const db = drizzle(config.env.DATABASE_URL);

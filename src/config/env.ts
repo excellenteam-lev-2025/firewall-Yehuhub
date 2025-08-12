@@ -16,8 +16,12 @@ const envSchema = z.object({
       message: "Invalid port provided",
     })
     .transform(Number),
-  DEV_DATABASE: z.url(),
-  PRODUCTION_DATABASE: z.url(),
+  DB_USER: z.string(),
+  DB_PASSWORD: z.string(),
+  DB_IP: z.string().refine((val) => validator.isIP(val), "Invalid db ip"),
+  DB_NAME_PROD: z.string(),
+  DB_NAME_DEV: z.string(),
+  DB_PORT: z.string().refine((val) => validator.isPort(val), "Invalid db port"),
   LOG_FILE_PATH: z.string().refine((filePath) => {
     try {
       path.parse(filePath);
@@ -38,14 +42,25 @@ if (!parsedEnv.success) {
   process.exit(1);
 }
 
-const { ENV, PORT, DEV_DATABASE, PRODUCTION_DATABASE, LOG_FILE_PATH } =
-  parsedEnv.data;
+const {
+  ENV,
+  PORT,
+  LOG_FILE_PATH,
+  DB_NAME_DEV,
+  DB_IP,
+  DB_NAME_PROD,
+  DB_PASSWORD,
+  DB_PORT,
+  DB_USER,
+} = parsedEnv.data;
 
 export const config = {
   env: {
     ENV,
     PORT,
-    DATABASE_URL: ENV === "dev" ? DEV_DATABASE : PRODUCTION_DATABASE,
+    DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_IP}:${DB_PORT}/${
+      ENV === "dev" ? DB_NAME_DEV : DB_NAME_PROD
+    }`,
     LOG_FILE_PATH,
   },
   constants: {

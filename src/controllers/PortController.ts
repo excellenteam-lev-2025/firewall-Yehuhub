@@ -1,55 +1,35 @@
 import { Request, Response, NextFunction } from "express";
-import { validatePort } from "../utils/validators";
 import {
-  deletePortList,
-  doesPortExists,
   insertPortList,
+  deletePortList,
+  getAllExistingPorts,
 } from "../repository/PortRepository";
 import { StatusCodes } from "http-status-codes";
+import { PortListInput, portListSchema } from "../schemas/PortSchema";
 
 export const validatePortList = (
-  req: Request,
+  req: Request<{}, {}, PortListInput>,
   res: Response,
   next: NextFunction
 ): void | Response => {
-  const { values } = req.body;
-
-  if (!Array.isArray(values) || values.length === 0) {
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "'values' must be a non-empty array of IPs" });
+  try {
+    portListSchema.parse(req.body);
+    next();
+  } catch (err) {
+    next(err);
   }
-
-  const invalidPort = values.find((port: number) => !validatePort(port));
-
-  if (invalidPort)
-    return res
-      .status(StatusCodes.BAD_REQUEST)
-      .json({ error: "One or more Ports are invalid" });
-
-  next();
 };
 
 export const addPorts = async (
-  req: Request,
+  req: Request<{}, {}, PortListInput>,
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
   const { mode, values } = req.body;
-
   try {
-    await insertPortList(values, mode);
-  } catch (err: any) {
-    if (err.name === "SequelizeUniqueConstraintError") {
-      console.log({ message: "UNIQUE CONSTRAINT ERROR", error: err.name });
-      return res.status(StatusCodes.BAD_REQUEST).json({
-        error: "One or more Ports already exist in the db",
-      });
-    }
-    console.log({ message: "DB ERROR", error: err });
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while inserting Ports",
-    });
+    await insertPortList({ mode, values });
+  } catch (err) {
+    next(err);
   }
 
   return res
@@ -58,33 +38,27 @@ export const addPorts = async (
 };
 
 export const removePorts = async (
-  req: Request,
+  req: Request<{}, {}, PortListInput>,
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
   const { mode, values } = req.body;
 
   try {
-    const portExistsResult = await Promise.all(
-      values.map(async (port: number) => ({
-        port: port,
-        exists: await doesPortExists(port, mode),
-      }))
-    );
-
-    const portNotExists = portExistsResult.find((port) => !port.exists);
-
-    if (portNotExists) {
+    const allExistingIps = await getAllExistingPorts({ mode, values });
+    const existingIps = allExistingIps.map((ip) => ip.value);
+    const ipsNotExisting = values.filter((ip) => !existingIps.includes(ip));
+    if (ipsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more Ports not found in the database" });
+        .json({ error: "One or more IP addresses not found in the database" });
     }
 
-    await deletePortList(values, mode);
+    await deletePortList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while inserting Ports",
+      error: "Internal server error while removing IP addresses",
     });
   }
 
