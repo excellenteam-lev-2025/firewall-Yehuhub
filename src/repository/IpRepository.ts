@@ -4,6 +4,8 @@ import { ipInsertSchema, IpListInput } from "../schemas/IpSchema";
 import { ipTable } from "../db/schema";
 import { ZodError } from "zod";
 import { eq, and, inArray } from "drizzle-orm";
+import { UpdateListInput } from "../schemas/UpdateListSchema";
+import { DbTransaction } from "../services/DbService";
 
 export const insertIpList = async (data: IpListInput): Promise<void> => {
   const { values, mode } = data;
@@ -69,41 +71,25 @@ export const getAllIps = async () => {
   };
 };
 
-// export const updateIps = async (ips: updateList) => {
-//   if (Object.keys(ips).length === 0) return [];
+export const updateIps = async (ips: UpdateListInput, tx: DbTransaction) => {
+  if (ips.ids.length === 0) return [];
 
-//   const transaction = await sequelize.transaction();
-//   try {
-//     const found = await Ip.findAll({
-//       where: { id: ips.ids, mode: ips.mode },
-//       attributes: ["id"],
-//       transaction,
-//       raw: true,
-//     });
+  const found = await tx
+    .select({ id: ipTable.id })
+    .from(ipTable)
+    .where(and(inArray(ipTable.id, ips.ids), eq(ipTable.mode, ips.mode)));
 
-//     if (found.length !== ips.ids.length) {
-//       throw new Error("One or more of the requested ip ids not found");
-//     }
-//     await Ip.update(
-//       { active: ips.active },
-//       { where: { id: ips.ids, mode: ips.mode }, transaction }
-//     );
+  if (found.length != ips.ids.length) {
+    throw new Error("One or more of the requested id's not found");
+  }
 
-//     const result = await Ip.findAll({
-//       where: {
-//         id: ips.ids,
-//         mode: ips.mode,
-//       },
-//       raw: true,
-//       attributes: { exclude: ["mode"] },
-//       transaction,
-//     });
-
-//     await transaction.commit();
-//     return result;
-//   } catch (err) {
-//     console.error(err);
-//     await transaction.rollback();
-//     throw err;
-//   }
-// };
+  return await tx
+    .update(ipTable)
+    .set({ active: ips.active })
+    .where(and(inArray(ipTable.id, ips.ids), eq(ipTable.mode, ips.mode)))
+    .returning({
+      id: ipTable.id,
+      value: ipTable.value,
+      active: ipTable.active,
+    });
+};

@@ -4,6 +4,8 @@ import { portTable } from "../db/schema";
 import { ZodError } from "zod";
 import { eq, and, inArray } from "drizzle-orm";
 import { portInsertSchema, PortListInput } from "../schemas/PortSchema";
+import { UpdateListInput } from "../schemas/UpdateListSchema";
+import { DbTransaction } from "../services/DbService";
 
 export const insertPortList = async (data: PortListInput): Promise<void> => {
   const { values, mode } = data;
@@ -68,39 +70,32 @@ export const getAllPorts = async () => {
   };
 };
 
-// export const updatePorts = async (ports: updateList) => {
-//   if (Object.keys(ports).length === 0) return [];
-//   const transaction = await sequelize.transaction();
-//   try {
-//     const found = await Port.findAll({
-//       where: { id: ports.ids, mode: ports.mode },
-//       attributes: ["id"],
-//       transaction,
-//       raw: true,
-//     });
+export const updatePorts = async (
+  ports: UpdateListInput,
+  tx: DbTransaction
+) => {
+  if (ports.ids.length === 0) return [];
 
-//     if (found.length !== ports.ids.length) {
-//       throw new Error("One or more of the requested port ids not found");
-//     }
-//     await Port.update(
-//       { active: ports.active },
-//       { where: { id: ports.ids, mode: ports.mode }, transaction }
-//     );
+  const found = await tx
+    .select({ id: portTable.id })
+    .from(portTable)
+    .where(
+      and(inArray(portTable.id, ports.ids), eq(portTable.mode, ports.mode))
+    );
 
-//     const result = await Port.findAll({
-//       where: {
-//         id: ports.ids,
-//         mode: ports.mode,
-//       },
-//       raw: true,
-//       attributes: { exclude: ["mode"] },
-//       transaction,
-//     });
-//     await transaction.commit();
-//     return result;
-//   } catch (err) {
-//     console.error(err);
-//     await transaction.rollback();
-//     throw err;
-//   }
-// };
+  if (found.length != ports.ids.length) {
+    throw new Error("One or more of the requested id's not found");
+  }
+
+  return await tx
+    .update(portTable)
+    .set({ active: ports.active })
+    .where(
+      and(inArray(portTable.id, ports.ids), eq(portTable.mode, ports.mode))
+    )
+    .returning({
+      id: portTable.id,
+      value: portTable.value,
+      active: portTable.active,
+    });
+};

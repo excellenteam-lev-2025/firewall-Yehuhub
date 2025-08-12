@@ -1,9 +1,11 @@
-import { db } from "../services/DbService";
+import { db, DbTransaction } from "../services/DbService";
 import { config } from "../config/env";
 import { urlTable } from "../db/schema";
 import { ZodError } from "zod";
 import { eq, and, inArray } from "drizzle-orm";
 import { urlInsertSchema, UrlListInput } from "../schemas/UrlSchema";
+import { UpdateListInput } from "../schemas/UpdateListSchema";
+import { PgTransaction } from "drizzle-orm/pg-core";
 
 export const insertUrlList = async (data: UrlListInput): Promise<void> => {
   const { values, mode } = data;
@@ -68,40 +70,25 @@ export const getAllUrls = async () => {
   };
 };
 
-// export const updateUrls = async (urls: updateList) => {
-//   if (Object.keys(urls).length === 0) return [];
+export const updateUrls = async (urls: UpdateListInput, tx: DbTransaction) => {
+  if (urls.ids.length === 0) return [];
 
-//   const transaction = await sequelize.transaction();
-//   try {
-//     const found = await Url.findAll({
-//       where: { id: urls.ids, mode: urls.mode },
-//       attributes: ["id"],
-//       transaction,
-//       raw: true,
-//     });
+  const found = await tx
+    .select({ id: urlTable.id })
+    .from(urlTable)
+    .where(and(inArray(urlTable.id, urls.ids), eq(urlTable.mode, urls.mode)));
 
-//     if (found.length !== urls.ids.length) {
-//       throw new Error("One or more of the requested url ids not found");
-//     }
-//     await Url.update(
-//       { active: urls.active },
-//       { where: { id: urls.ids, mode: urls.mode }, transaction }
-//     );
+  if (found.length != urls.ids.length) {
+    throw new Error("One or more of the requested id's not found");
+  }
 
-//     const result = await Url.findAll({
-//       where: {
-//         id: urls.ids,
-//         mode: urls.mode,
-//       },
-//       raw: true,
-//       attributes: { exclude: ["mode"] },
-//       transaction,
-//     });
-//     await transaction.commit();
-//     return result;
-//   } catch (err) {
-//     console.error(err);
-//     await transaction.rollback();
-//     throw err;
-//   }
-// };
+  return await tx
+    .update(urlTable)
+    .set({ active: urls.active })
+    .where(and(inArray(urlTable.id, urls.ids), eq(urlTable.mode, urls.mode)))
+    .returning({
+      id: urlTable.id,
+      value: urlTable.value,
+      active: urlTable.active,
+    });
+};

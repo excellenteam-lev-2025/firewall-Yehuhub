@@ -8,7 +8,7 @@ export const errorHandler = async (
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
-  console.error("Unexpected error: ", err);
+  console.error("error: ", err);
   if (err instanceof ZodError) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       errors: err.issues.map((issue) => ({
@@ -16,6 +16,9 @@ export const errorHandler = async (
         message: issue.message,
       })),
     });
+  }
+  if (err instanceof Error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({ error: err.message });
   }
   return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
     error: "Internal server error.",
