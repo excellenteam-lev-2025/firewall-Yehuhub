@@ -1,6 +1,6 @@
 import express, { Application } from "express";
 import apiRouter from "./routes/api";
-import { db } from "./services/DbService";
+import { testDbConnection } from "./services/DbService";
 import { config } from "./config/env";
 import "./config/logger";
 import { errorHandler } from "./middleware/ErrorHandler";
@@ -14,6 +14,8 @@ app.use("/api/firewall", apiRouter);
 
 (async () => {
   try {
+    await testDbConnection();
+
     app.listen(config.env.PORT, () => {
       console.log(`App started on port ${config.env.PORT}`);
     });

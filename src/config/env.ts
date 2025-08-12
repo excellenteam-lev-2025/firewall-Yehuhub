@@ -22,6 +22,11 @@ const envSchema = z.object({
   DB_NAME_PROD: z.string(),
   DB_NAME_DEV: z.string(),
   DB_PORT: z.string().refine((val) => validator.isPort(val), "Invalid db port"),
+  DB_CONNECTION_INTERVAL: z
+    .string()
+    .refine((val) => validator.isNumeric(val))
+    .transform(Number)
+    .default(5000),
   LOG_FILE_PATH: z.string().refine((filePath) => {
     try {
       path.parse(filePath);
@@ -52,6 +57,7 @@ const {
   DB_PASSWORD,
   DB_PORT,
   DB_USER,
+  DB_CONNECTION_INTERVAL,
 } = parsedEnv.data;
 
 export const config = {
@@ -62,6 +68,7 @@ export const config = {
       ENV === "dev" ? DB_NAME_DEV : DB_NAME_PROD
     }`,
     LOG_FILE_PATH,
+    DB_CONNECTION_INTERVAL,
   },
   constants: {
     blacklist: "blacklist",
