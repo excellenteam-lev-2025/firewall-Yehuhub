@@ -19,8 +19,7 @@ const envSchema = z.object({
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
   DB_IP: z.string().refine((val) => validator.isIP(val), "Invalid db ip"),
-  DB_NAME_PROD: z.string(),
-  DB_NAME_DEV: z.string(),
+  DB_NAME: z.string(),
   DB_PORT: z.string().refine((val) => validator.isPort(val), "Invalid db port"),
   DB_CONNECTION_INTERVAL: z
     .string()
@@ -51,25 +50,19 @@ const {
   ENV,
   PORT,
   LOG_FILE_PATH,
-  DB_NAME_DEV,
+  DB_NAME,
   DB_IP,
-  DB_NAME_PROD,
   DB_PASSWORD,
   DB_PORT,
   DB_USER,
   DB_CONNECTION_INTERVAL,
 } = parsedEnv.data;
 
-const dbNames = {
-  dev: DB_NAME_DEV,
-  production: DB_NAME_PROD,
-};
-
 export const config = {
   env: {
     ENV,
     PORT,
-    DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_IP}:${DB_PORT}/${dbNames[ENV]}`,
+    DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_IP}:${DB_PORT}/${DB_NAME}_${ENV}`,
     LOG_FILE_PATH,
     DB_CONNECTION_INTERVAL,
   },
