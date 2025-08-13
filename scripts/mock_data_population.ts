@@ -52,7 +52,7 @@ const generatePorts = async (amount: number = 10) => {
   const data: PortInsertInput[] = [];
 
   for (let i = 0; i < amount; i++) {
-    const url = generateFakeUrl();
+    const url = generateFakePort();
     const parsed = portInsertSchema.parse(url);
     data.push(parsed);
   }
@@ -63,7 +63,7 @@ const generateIps = async (amount: number = 10) => {
   const data: IpInsertInput[] = [];
 
   for (let i = 0; i < amount; i++) {
-    const url = generateFakeUrl();
+    const url = generateFakeIp();
     const parsed = ipInsertSchema.parse(url);
     data.push(parsed);
   }
