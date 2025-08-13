@@ -4,8 +4,11 @@ import { config } from "./env";
 const isDev = config.env.ENV === "dev";
 
 const logger = winston.createLogger({
-  level: "info",
-  format: winston.format.json(),
+  level: isDev ? "debug" : "info",
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.json()
+  ),
   transports: [
     isDev
       ? new winston.transports.Console()

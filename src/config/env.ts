@@ -60,13 +60,16 @@ const {
   DB_CONNECTION_INTERVAL,
 } = parsedEnv.data;
 
+const dbNames = {
+  dev: DB_NAME_DEV,
+  production: DB_NAME_PROD,
+};
+
 export const config = {
   env: {
     ENV,
     PORT,
-    DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_IP}:${DB_PORT}/${
-      ENV === "dev" ? DB_NAME_DEV : DB_NAME_PROD
-    }`,
+    DATABASE_URL: `postgres://${DB_USER}:${DB_PASSWORD}@${DB_IP}:${DB_PORT}/${dbNames[ENV]}`,
     LOG_FILE_PATH,
     DB_CONNECTION_INTERVAL,
   },
