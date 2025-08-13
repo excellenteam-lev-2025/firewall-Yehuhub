@@ -1,126 +1,94 @@
-import sequelize from "../db/DbSetup";
-import Url from "../models/Url";
-import { Op } from "sequelize";
-import { updateList } from "../controllers/RulesController";
+import { db, DbTransaction } from "../services/DbService";
+import { config } from "../config/env";
+import { urlTable } from "../db/schema";
+import { ZodError } from "zod";
+import { eq, and, inArray } from "drizzle-orm";
+import { urlInsertSchema, UrlListInput } from "../schemas/UrlSchema";
+import { UpdateListInput } from "../schemas/UpdateListSchema";
+import { PgTransaction } from "drizzle-orm/pg-core";
 
-export const insertUrlList = async (
-  urlList: string[],
-  mode: string
-): Promise<void> => {
-  const transaction = await sequelize.transaction();
-
+export const insertUrlList = async (data: UrlListInput): Promise<void> => {
+  const { values, mode } = data;
   try {
-    const records = urlList.map((url) => ({
-      value: url,
-      mode: mode,
-      active: true,
-    }));
-
-    await Url.bulkCreate(records, {
-      validate: true,
-      transaction,
+    const records = values.map((ip) => {
+      return urlInsertSchema.parse({
+        value: ip,
+        mode,
+      });
     });
-
-    await transaction.commit();
+    await db.transaction(async (tx) => {
+      await tx.insert(urlTable).values(records);
+    });
   } catch (err) {
-    await transaction.rollback();
+    if (err instanceof ZodError) {
+      console.error("Validation error: ", err.issues);
+    }
     throw err;
   }
 };
 
-export const deleteUrlList = async (
-  urlList: string[],
-  mode: string
-): Promise<void> => {
-  const transaction = await sequelize.transaction();
+export const deleteUrlList = async (data: UrlListInput): Promise<void> => {
+  const { values, mode } = data;
   try {
-    await Url.destroy({
-      where: {
-        value: { [Op.in]: urlList },
-        mode: mode, // not strictly necessary as we already validated that in doesUrlExists
-      },
-      transaction,
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(urlTable)
+        .where(and(inArray(urlTable.value, values), eq(urlTable.mode, mode)));
     });
-
-    await transaction.commit();
   } catch (err) {
-    await transaction.rollback();
+    if (err instanceof ZodError) {
+      console.error("Validation error: ", err.issues);
+    }
     throw err;
   }
 };
 
-export const doesUrlExists = async (
-  url: string,
-  mode: string
-): Promise<Boolean> => {
-  const found = await Url.findOne({
-    where: { value: url, mode: mode },
-  });
-  return found !== null;
+export const getAllExistingUrls = async (data: UrlListInput) => {
+  const found = await db
+    .select({ value: urlTable.value, mode: urlTable.mode })
+    .from(urlTable)
+    .where(
+      and(inArray(urlTable.value, data.values), eq(urlTable.mode, data.mode))
+    );
+  return found;
 };
 
 export const getAllUrls = async () => {
-  try {
-    const [blacklist, whitelist] = await Promise.all([
-      Url.findAll({
-        where: {
-          mode: "blacklist",
-        },
-        raw: true,
-        attributes: { exclude: ["mode", "active"] },
-      }),
-
-      Url.findAll({
-        where: {
-          mode: "whitelist",
-        },
-        raw: true,
-        attributes: { exclude: ["mode", "active"] },
-      }),
-    ]);
-    return {
-      blacklist,
-      whitelist,
-    };
-  } catch (err) {
-    throw err;
-  }
+  const [blacklist, whitelist] = await Promise.all([
+    db
+      .select({ id: urlTable.id, value: urlTable.value })
+      .from(urlTable)
+      .where(eq(urlTable.mode, config.constants.blacklist)),
+    db
+      .select({ id: urlTable.id, value: urlTable.value })
+      .from(urlTable)
+      .where(eq(urlTable.mode, config.constants.whitelist)),
+  ]);
+  return {
+    blacklist,
+    whitelist,
+  };
 };
 
-export const updateUrls = async (urls: updateList) => {
-  if (Object.keys(urls).length === 0) return [];
+export const updateUrls = async (urls: UpdateListInput, tx: DbTransaction) => {
+  if (urls.ids.length === 0) return [];
 
-  const transaction = await sequelize.transaction();
-  try {
-    const found = await Url.findAll({
-      where: { id: urls.ids, mode: urls.mode },
-      attributes: ["id"],
-      transaction,
-      raw: true,
-    });
+  const found = await tx
+    .select({ id: urlTable.id })
+    .from(urlTable)
+    .where(and(inArray(urlTable.id, urls.ids), eq(urlTable.mode, urls.mode)));
 
-    if (found.length !== urls.ids.length) {
-      throw new Error("One or more of the requested url ids not found");
-    }
-    await Url.update(
-      { active: urls.active },
-      { where: { id: urls.ids, mode: urls.mode }, transaction }
-    );
-
-    const result = await Url.findAll({
-      where: {
-        id: urls.ids,
-        mode: urls.mode,
-      },
-      raw: true,
-      attributes: { exclude: ["mode"] },
-      transaction,
-    });
-    await transaction.commit();
-    return result;
-  } catch (err) {
-    console.error(err);
-    await transaction.rollback();
-    throw err;
+  if (found.length != urls.ids.length) {
+    throw new Error("One or more of the requested id's not found");
   }
+
+  return await tx
+    .update(urlTable)
+    .set({ active: urls.active })
+    .where(and(inArray(urlTable.id, urls.ids), eq(urlTable.mode, urls.mode)))
+    .returning({
+      id: urlTable.id,
+      value: urlTable.value,
+      active: urlTable.active,
+    });
 };

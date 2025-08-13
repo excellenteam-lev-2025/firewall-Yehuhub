@@ -1,41 +1,23 @@
 import { Request, Response, NextFunction } from "express";
-import { getAllIps, updateIps } from "../repository/IpRepository";
-import { getAllUrls, updateUrls } from "../repository/UrlRepository";
-import { getAllPorts, updatePorts } from "../repository/PortRepository";
+import { getAllIps } from "../repository/IpRepository";
+import { getAllUrls } from "../repository/UrlRepository";
+import { getAllPorts } from "../repository/PortRepository";
+import { config } from "../config/env";
+import { StatusCodes } from "http-status-codes";
+import { UpdateAllInput, updateAllSchema } from "../schemas/UpdateListSchema";
+import { toggleStatus } from "../repository/RulesRepository";
 
-export interface updateList {
-  ids: number[];
-  mode: "blacklist" | "whitelist";
-  active: boolean;
-}
-
-const validateIdList = (idList: unknown): boolean => {
-  console.log(idList);
-  return (
-    Array.isArray(idList) &&
-    idList.every((id) => typeof id === "number" && !isNaN(id))
-  );
-};
-
-const validateMode = (mode: unknown): boolean => {
-  return (
-    typeof mode === "string" &&
-    (mode.toLowerCase() === "blacklist" || mode.toLowerCase() === "whitelist")
-  );
-};
-
-const validateActiveStatus = (active: unknown): boolean => {
-  return typeof active === "boolean";
-};
-
-const validateParameters = (updateObject: updateList): boolean => {
-  if (Object.keys(updateObject).length === 0) return true;
-
-  return (
-    validateActiveStatus(updateObject.active) &&
-    validateIdList(updateObject.ids) &&
-    validateMode(updateObject.mode)
-  );
+const validateUpdateObject = async (
+  req: Request<{}, {}, UpdateAllInput>,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    updateAllSchema.parse(req.body); //zod errors are caught in the error handler
+    next();
+  } catch (err) {
+    next(err);
+  }
 };
 
 export const getAllRules = async (
@@ -48,49 +30,24 @@ export const getAllRules = async (
     const urls = await getAllUrls();
     const ports = await getAllPorts();
 
-    return res.status(200).json({ ips, urls, ports });
+    return res.status(StatusCodes.OK).json({ ips, urls, ports });
   } catch (err) {
-    return res.status(500).json({ error: "Internal Server Error" });
+    return res
+      .status(StatusCodes.INTERNAL_SERVER_ERROR)
+      .json({ error: "Internal Server Error" });
   }
 };
 
 export const toggleRuleStatus = async (
-  req: Request,
+  req: Request<{}, {}, UpdateAllInput>,
   res: Response,
   next: NextFunction
 ) => {
-  const { urls, ports, ips } = req.body;
-
-  if (urls && !validateParameters(urls)) {
-    return res
-      .status(400)
-      .json({ error: "invalid url rule activation parameters" });
-  }
-  if (ips && !validateParameters(ips)) {
-    return res
-      .status(400)
-      .json({ error: "invalid ips rule activation parameters" });
-  }
-  if (ports && !validateParameters(ports)) {
-    return res
-      .status(400)
-      .json({ error: "invalid ports rule activation parameters" });
-  }
-
   try {
-    const updatedUrls = await updateUrls(urls);
-    const updatedPorts = await updatePorts(ports);
-    const updatedIps = await updateIps(ips);
-    return res.status(200).json({
-      updatedUrls,
-      updatedPorts,
-      updatedIps,
-    });
+    const validatedData = updateAllSchema.parse(req.body);
+    const updateResult = await toggleStatus(validatedData);
+    return res.status(StatusCodes.OK).json(updateResult);
   } catch (err) {
-    console.log(err);
-    if (err instanceof Error) {
-      res.status(400).json({ error: err.message });
-    }
-    return res.status(500).json({ error: "Internal Server Error" });
+    next(err);
   }
 };

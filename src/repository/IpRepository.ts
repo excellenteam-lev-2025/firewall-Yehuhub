@@ -1,127 +1,95 @@
-import sequelize from "../db/DbSetup";
-import Ip from "../models/Ip";
-import { Op, where } from "sequelize";
-import { updateList } from "../controllers/RulesController";
+import { db } from "../services/DbService";
+import { config } from "../config/env";
+import { ipInsertSchema, IpListInput } from "../schemas/IpSchema";
+import { ipTable } from "../db/schema";
+import { ZodError } from "zod";
+import { eq, and, inArray } from "drizzle-orm";
+import { UpdateListInput } from "../schemas/UpdateListSchema";
+import { DbTransaction } from "../services/DbService";
 
-export const insertIpList = async (
-  ipList: string[],
-  mode: string
-): Promise<void> => {
-  const transaction = await sequelize.transaction();
-
+export const insertIpList = async (data: IpListInput): Promise<void> => {
+  const { values, mode } = data;
   try {
-    const records = ipList.map((ip) => ({
-      value: ip,
-      mode: mode,
-      active: true,
-    }));
-
-    await Ip.bulkCreate(records, {
-      validate: true,
-      transaction,
+    const records = values.map((ip) => {
+      return ipInsertSchema.parse({
+        value: ip,
+        mode,
+      });
     });
-
-    await transaction.commit();
-  } catch (err) {
-    await transaction.rollback();
-    throw err;
-  }
-};
-
-export const deleteIpList = async (
-  ipList: string[],
-  mode: string
-): Promise<void> => {
-  const transaction = await sequelize.transaction();
-  try {
-    await Ip.destroy({
-      where: {
-        value: { [Op.in]: ipList },
-        mode: mode, // not strictly necessary as we already validated that in doesIpExists
-      },
-      transaction,
+    await db.transaction(async (tx) => {
+      await tx.insert(ipTable).values(records);
     });
-
-    await transaction.commit();
   } catch (err) {
-    await transaction.rollback();
-    throw err;
-  }
-};
-
-export const doesIpExists = async (
-  ip: string,
-  mode: string
-): Promise<Boolean> => {
-  const found = await Ip.findOne({
-    where: { value: ip, mode: mode },
-  });
-  return found !== null;
-};
-
-export const getAllIps = async () => {
-  try {
-    const [blacklist, whitelist] = await Promise.all([
-      Ip.findAll({
-        where: {
-          mode: "blacklist",
-        },
-        raw: true,
-        attributes: { exclude: ["mode", "active"] },
-      }),
-
-      Ip.findAll({
-        where: {
-          mode: "whitelist",
-        },
-        raw: true,
-        attributes: { exclude: ["mode", "active"] },
-      }),
-    ]);
-    return {
-      blacklist,
-      whitelist,
-    };
-  } catch (err) {
-    throw err;
-  }
-};
-
-export const updateIps = async (ips: updateList) => {
-  if (Object.keys(ips).length === 0) return [];
-
-  const transaction = await sequelize.transaction();
-  try {
-    const found = await Ip.findAll({
-      where: { id: ips.ids, mode: ips.mode },
-      attributes: ["id"],
-      transaction,
-      raw: true,
-    });
-
-    if (found.length !== ips.ids.length) {
-      throw new Error("One or more of the requested ip ids not found");
+    if (err instanceof ZodError) {
+      console.error("Validation error: ", err.issues);
     }
-    await Ip.update(
-      { active: ips.active },
-      { where: { id: ips.ids, mode: ips.mode }, transaction }
-    );
-
-    const result = await Ip.findAll({
-      where: {
-        id: ips.ids,
-        mode: ips.mode,
-      },
-      raw: true,
-      attributes: { exclude: ["mode"] },
-      transaction,
-    });
-
-    await transaction.commit();
-    return result;
-  } catch (err) {
-    console.error(err);
-    await transaction.rollback();
     throw err;
   }
+};
+
+export const deleteIpList = async (data: IpListInput): Promise<void> => {
+  const { values, mode } = data;
+  try {
+    await db.transaction(async (tx) => {
+      await tx
+        .delete(ipTable)
+        .where(and(inArray(ipTable.value, values), eq(ipTable.mode, mode)));
+    });
+  } catch (err) {
+    if (err instanceof ZodError) {
+      console.error("Validation error: ", err.issues);
+    }
+    throw err;
+  }
+};
+
+export const getAllExistingIps = async (data: IpListInput) => {
+  const found = await db
+    .select({ value: ipTable.value, mode: ipTable.mode })
+    .from(ipTable)
+    .where(
+      and(inArray(ipTable.value, data.values), eq(ipTable.mode, data.mode))
+    );
+  return found;
+};
+
+// caller catches the db error for it since errors here are not meaningful enough
+export const getAllIps = async () => {
+  const [blacklist, whitelist] = await Promise.all([
+    db
+      .select({ id: ipTable.id, value: ipTable.value })
+      .from(ipTable)
+      .where(eq(ipTable.mode, config.constants.blacklist)),
+    db
+      .select({ id: ipTable.id, value: ipTable.value })
+      .from(ipTable)
+      .where(eq(ipTable.mode, config.constants.whitelist)),
+  ]);
+  return {
+    blacklist,
+    whitelist,
+  };
+};
+
+export const updateIps = async (ips: UpdateListInput, tx: DbTransaction) => {
+  if (ips.ids.length === 0) return [];
+
+  const found = await tx
+    .select({ id: ipTable.id })
+    .from(ipTable)
+    .where(and(inArray(ipTable.id, ips.ids), eq(ipTable.mode, ips.mode)));
+
+  if (found.length != ips.ids.length) {
+    throw new Error("One or more of the requested id's not found");
+  }
+
+  return await tx
+    .update(ipTable)
+    .set({ active: ips.active })
+    .where(and(inArray(ipTable.id, ips.ids), eq(ipTable.mode, ips.mode)))
+    .returning({
+      id: ipTable.id,
+      value: ipTable.value,
+      active: ipTable.active,
+    });
 };
