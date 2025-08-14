@@ -2,12 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import { getAllIps } from "../repository/IpRepository";
 import { getAllUrls } from "../repository/UrlRepository";
 import { getAllPorts } from "../repository/PortRepository";
-import { config } from "../config/env";
 import { StatusCodes } from "http-status-codes";
 import { UpdateAllInput, updateAllSchema } from "../schemas/UpdateListSchema";
 import { toggleStatus } from "../repository/RulesRepository";
 
-const validateUpdateObject = async (
+export const validateUpdateObject = async (
   req: Request<{}, {}, UpdateAllInput>,
   res: Response,
   next: NextFunction
