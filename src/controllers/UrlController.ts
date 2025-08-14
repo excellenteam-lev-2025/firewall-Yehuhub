@@ -45,24 +45,24 @@ export const removeUrls = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingIps = await getAllExistingUrls({ mode, values });
-    const existingIps = allExistingIps.map((ip) => ip.value);
-    const ipsNotExisting = values.filter((ip) => !existingIps.includes(ip));
-    if (ipsNotExisting.length > 0) {
+    const allExistingUrls = await getAllExistingUrls({ mode, values });
+    const existingUrls = allExistingUrls.map((url) => url.value);
+    const urlsNotExisting = values.filter((url) => !existingUrls.includes(url));
+    if (urlsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more IP addresses not found in the database" });
+        .json({ error: "One or more URLs not found in the database" });
     }
 
     await deleteUrlList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while removing IP addresses",
+      error: "Internal server error while removing URLs",
     });
   }
 
   return res
     .status(StatusCodes.OK)
-    .json({ type: "ip", mode: mode, values: values, status: "success" });
+    .json({ type: "url", mode: mode, values: values, status: "success" });
 };

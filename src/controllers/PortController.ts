@@ -45,20 +45,22 @@ export const removePorts = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingIps = await getAllExistingPorts({ mode, values });
-    const existingIps = allExistingIps.map((ip) => ip.value);
-    const ipsNotExisting = values.filter((ip) => !existingIps.includes(ip));
-    if (ipsNotExisting.length > 0) {
+    const allExistingPorts = await getAllExistingPorts({ mode, values });
+    const existingPorts = allExistingPorts.map((port) => port.value);
+    const portsNotExisting = values.filter(
+      (port) => !existingPorts.includes(port)
+    );
+    if (portsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more IP addresses not found in the database" });
+        .json({ error: "One or more PORTS not found in the database" });
     }
 
     await deletePortList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while removing IP addresses",
+      error: "Internal server error while removing PORTS",
     });
   }
 

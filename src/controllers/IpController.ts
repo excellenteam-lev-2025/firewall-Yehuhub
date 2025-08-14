@@ -56,10 +56,7 @@ export const removeIp = async (
 
     await deleteIpList({ values, mode });
   } catch (err) {
-    console.log(err);
-    return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while removing IP addresses",
-    });
+    next(err);
   }
 
   return res
