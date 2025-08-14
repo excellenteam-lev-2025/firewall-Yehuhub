@@ -1,13 +1,17 @@
 import { toggleStatus } from "../../../src/repository/RulesRepository";
-import { db } from "../../../src/services/DbService";
+import { getDb } from "../../../src/services/DbService";
 import { updateUrls } from "../../../src/repository/UrlRepository";
 import { updatePorts } from "../../../src/repository/PortRepository";
 import { updateIps } from "../../../src/repository/IpRepository";
 
+const mockDb = {
+  select: jest.fn(),
+  transaction: jest.fn(),
+  update: jest.fn(),
+};
+
 jest.mock("../../../src/services/DbService", () => ({
-  db: {
-    transaction: jest.fn(),
-  },
+  getDb: jest.fn(() => mockDb),
 }));
 
 jest.mock("../../../src/repository/IpRepository");
@@ -35,8 +39,7 @@ describe("toggleStatus", () => {
     (updatePorts as jest.Mock).mockResolvedValue(updatedPorts);
     (updateIps as jest.Mock).mockResolvedValue(updatedIps);
 
-    // Mock db.transaction to immediately execute the callback with fake tx
-    (db.transaction as jest.Mock).mockImplementation(async (callback) => {
+    (mockDb.transaction as jest.Mock).mockImplementation(async (callback) => {
       return callback(mockTx);
     });
 
@@ -48,7 +51,7 @@ describe("toggleStatus", () => {
     });
 
     // Assert
-    expect(db.transaction).toHaveBeenCalledTimes(1);
+    expect(mockDb.transaction).toHaveBeenCalledTimes(1);
     expect(updateUrls).toHaveBeenCalledWith(urlsInput, mockTx);
     expect(updatePorts).toHaveBeenCalledWith(portsInput, mockTx);
     expect(updateIps).toHaveBeenCalledWith(ipsInput, mockTx);
@@ -63,7 +66,7 @@ describe("toggleStatus", () => {
   test("should propagate error if any update function fails", async () => {
     const error = new Error("Something went wrong");
     (updateUrls as jest.Mock).mockRejectedValue(error);
-    (db.transaction as jest.Mock).mockImplementation(async (callback) =>
+    (mockDb.transaction as jest.Mock).mockImplementation(async (callback) =>
       callback(mockTx)
     );
 

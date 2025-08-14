@@ -1,4 +1,4 @@
-import { db, DbTransaction } from "../services/DbService";
+import { getDb, DbTransaction } from "../services/DbService";
 import { config } from "../config/env";
 import { urlTable } from "../db/schema";
 import { ZodError } from "zod";
@@ -8,6 +8,7 @@ import { UpdateListInput } from "../schemas/UpdateListSchema";
 import { PgTransaction } from "drizzle-orm/pg-core";
 
 export const insertUrlList = async (data: UrlListInput): Promise<void> => {
+  const db = getDb();
   const { values, mode } = data;
   try {
     const records = values.map((ip) => {
@@ -28,6 +29,7 @@ export const insertUrlList = async (data: UrlListInput): Promise<void> => {
 };
 
 export const deleteUrlList = async (data: UrlListInput): Promise<void> => {
+  const db = getDb();
   const { values, mode } = data;
   try {
     await db.transaction(async (tx) => {
@@ -44,6 +46,7 @@ export const deleteUrlList = async (data: UrlListInput): Promise<void> => {
 };
 
 export const getAllExistingUrls = async (data: UrlListInput) => {
+  const db = getDb();
   const found = await db
     .select({ value: urlTable.value, mode: urlTable.mode })
     .from(urlTable)
@@ -54,6 +57,7 @@ export const getAllExistingUrls = async (data: UrlListInput) => {
 };
 
 export const getAllUrls = async () => {
+  const db = getDb();
   const [blacklist, whitelist] = await Promise.all([
     db
       .select({ id: urlTable.id, value: urlTable.value })

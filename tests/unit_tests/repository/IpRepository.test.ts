@@ -5,14 +5,17 @@ import {
   getAllIps,
   getAllExistingIps,
 } from "../../../src/repository/IpRepository";
-import { db } from "../../../src/services/DbService";
+import { getDb } from "../../../src/services/DbService";
 import { ipTable } from "../../../src/db/schema";
 
+const mockDb = {
+  select: jest.fn(),
+  transaction: jest.fn(),
+  update: jest.fn(),
+};
+
 jest.mock("../../../src/services/DbService", () => ({
-  db: {
-    select: jest.fn(),
-    transaction: jest.fn(),
-  },
+  getDb: jest.fn(() => mockDb),
 }));
 
 describe("IpRepository Tests", () => {
@@ -21,7 +24,7 @@ describe("IpRepository Tests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (db.transaction as jest.Mock).mockImplementation(async (cb) => {
+    (mockDb.transaction as jest.Mock).mockImplementation(async (cb) => {
       await cb({
         insert: () => ({ values: insertMock }),
         delete: () => ({ where: deleteMock }),
@@ -35,7 +38,7 @@ describe("IpRepository Tests", () => {
 
       await insertIpList(mockIpData);
 
-      expect(db.transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
       expect(insertMock).toHaveBeenCalledWith([
         { value: "1.1.1.1", mode: "blacklist" },
         { value: "2.2.2.2", mode: "blacklist" },
@@ -46,7 +49,7 @@ describe("IpRepository Tests", () => {
       const mockIpData = { values: ["asdf", "2.2.2.2"], mode: "blacklist" };
       await expect(insertIpList(mockIpData)).rejects.toThrow();
 
-      expect(db.transaction).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
       expect(insertMock).not.toHaveBeenCalled();
     });
   });
@@ -57,7 +60,7 @@ describe("IpRepository Tests", () => {
 
       await deleteIpList(mockIpData);
 
-      expect(db.transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
       expect(deleteMock).toHaveBeenCalledTimes(1);
       expect(deleteMock).toHaveBeenCalledWith(expect.anything());
     });
@@ -127,7 +130,7 @@ describe("IpRepository Tests", () => {
       ];
       const whitelistRows = [{ id: 3, value: "3.3.3.3" }];
 
-      (db.select as jest.Mock)
+      (mockDb.select as jest.Mock)
         .mockReturnValueOnce({
           from: () => ({
             where: async () => blacklistRows,
@@ -146,12 +149,12 @@ describe("IpRepository Tests", () => {
         whitelist: whitelistRows,
       });
 
-      expect(db.select).toHaveBeenCalledTimes(2);
-      expect(db.select).toHaveBeenNthCalledWith(1, {
+      expect(mockDb.select).toHaveBeenCalledTimes(2);
+      expect(mockDb.select).toHaveBeenNthCalledWith(1, {
         id: ipTable.id,
         value: ipTable.value,
       });
-      expect(db.select).toHaveBeenNthCalledWith(2, {
+      expect(mockDb.select).toHaveBeenNthCalledWith(2, {
         id: ipTable.id,
         value: ipTable.value,
       });
@@ -169,7 +172,7 @@ describe("IpRepository Tests", () => {
         { value: "2.2.2.2", mode: "blacklist" },
       ];
 
-      (db.select as jest.Mock).mockReturnValue({
+      (mockDb.select as jest.Mock).mockReturnValue({
         from: () => ({
           where: async () => mockRows,
         }),
@@ -179,7 +182,7 @@ describe("IpRepository Tests", () => {
       const result = await getAllExistingIps(input);
 
       expect(result).toEqual(mockRows);
-      expect(db.select).toHaveBeenCalledWith({
+      expect(mockDb.select).toHaveBeenCalledWith({
         value: ipTable.value,
         mode: ipTable.mode,
       });

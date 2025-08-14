@@ -5,14 +5,17 @@ import {
   getAllExistingUrls,
   updateUrls,
 } from "../../../src/repository/UrlRepository";
-import { db } from "../../../src/services/DbService";
+import { getDb } from "../../../src/services/DbService";
 import { urlTable } from "../../../src/db/schema";
 
+const mockDb = {
+  select: jest.fn(),
+  transaction: jest.fn(),
+  update: jest.fn(),
+};
+
 jest.mock("../../../src/services/DbService", () => ({
-  db: {
-    select: jest.fn(),
-    transaction: jest.fn(),
-  },
+  getDb: jest.fn(() => mockDb),
 }));
 
 describe("UrlRepository Tests", () => {
@@ -21,7 +24,7 @@ describe("UrlRepository Tests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (db.transaction as jest.Mock).mockImplementation(async (cb) => {
+    (mockDb.transaction as jest.Mock).mockImplementation(async (cb) => {
       await cb({
         insert: () => ({ values: insertMock }),
         delete: () => ({ where: deleteMock }),
@@ -38,7 +41,7 @@ describe("UrlRepository Tests", () => {
 
       await insertUrlList(mockUrlData);
 
-      expect(db.transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
       expect(insertMock).toHaveBeenCalledWith([
         { value: "COOL.com", mode: "blacklist" },
         { value: "really-COOL.com", mode: "blacklist" },
@@ -49,7 +52,7 @@ describe("UrlRepository Tests", () => {
       const mockUrlData = { values: ["asdf", "COOL.com"], mode: "blacklist" };
       await expect(insertUrlList(mockUrlData)).rejects.toThrow();
 
-      expect(db.transaction).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
       expect(insertMock).not.toHaveBeenCalled();
     });
   });
@@ -63,7 +66,7 @@ describe("UrlRepository Tests", () => {
 
       await deleteUrlList(mockUrlData);
 
-      expect(db.transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
       expect(deleteMock).toHaveBeenCalledTimes(1);
       expect(deleteMock).toHaveBeenCalledWith(expect.anything());
     });
@@ -133,7 +136,7 @@ describe("UrlRepository Tests", () => {
       ];
       const whitelistRows = [{ id: 3, value: "real-cool.com" }];
 
-      (db.select as jest.Mock)
+      (mockDb.select as jest.Mock)
         .mockReturnValueOnce({
           from: () => ({
             where: async () => blacklistRows,
@@ -152,12 +155,12 @@ describe("UrlRepository Tests", () => {
         whitelist: whitelistRows,
       });
 
-      expect(db.select).toHaveBeenCalledTimes(2);
-      expect(db.select).toHaveBeenNthCalledWith(1, {
+      expect(mockDb.select).toHaveBeenCalledTimes(2);
+      expect(mockDb.select).toHaveBeenNthCalledWith(1, {
         id: urlTable.id,
         value: urlTable.value,
       });
-      expect(db.select).toHaveBeenNthCalledWith(2, {
+      expect(mockDb.select).toHaveBeenNthCalledWith(2, {
         id: urlTable.id,
         value: urlTable.value,
       });
@@ -175,7 +178,7 @@ describe("UrlRepository Tests", () => {
         { value: "really-cool.com", mode: "blacklist" },
       ];
 
-      (db.select as jest.Mock).mockReturnValue({
+      (mockDb.select as jest.Mock).mockReturnValue({
         from: () => ({
           where: async () => mockRows,
         }),
@@ -188,7 +191,7 @@ describe("UrlRepository Tests", () => {
       const result = await getAllExistingUrls(input);
 
       expect(result).toEqual(mockRows);
-      expect(db.select).toHaveBeenCalledWith({
+      expect(mockDb.select).toHaveBeenCalledWith({
         value: urlTable.value,
         mode: urlTable.mode,
       });

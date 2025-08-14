@@ -5,14 +5,17 @@ import {
   getAllExistingPorts,
   getAllPorts,
 } from "../../../src/repository/PortRepository";
-import { db } from "../../../src/services/DbService";
+import { getDb } from "../../../src/services/DbService";
 import { portTable } from "../../../src/db/schema";
 
+const mockDb = {
+  select: jest.fn(),
+  transaction: jest.fn(),
+  update: jest.fn(),
+};
+
 jest.mock("../../../src/services/DbService", () => ({
-  db: {
-    select: jest.fn(),
-    transaction: jest.fn(),
-  },
+  getDb: jest.fn(() => mockDb),
 }));
 
 describe("PortRepository Tests", () => {
@@ -21,7 +24,7 @@ describe("PortRepository Tests", () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    (db.transaction as jest.Mock).mockImplementation(async (cb) => {
+    (mockDb.transaction as jest.Mock).mockImplementation(async (cb) => {
       await cb({
         insert: () => ({ values: insertMock }),
         delete: () => ({ where: deleteMock }),
@@ -35,7 +38,7 @@ describe("PortRepository Tests", () => {
 
       await insertPortList(mockPortData);
 
-      expect(db.transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
       expect(insertMock).toHaveBeenCalledWith([
         { value: 334, mode: "blacklist" },
         { value: 282, mode: "blacklist" },
@@ -46,7 +49,7 @@ describe("PortRepository Tests", () => {
       const mockPortData = { values: [1000000, -15], mode: "blacklist" };
       await expect(insertPortList(mockPortData)).rejects.toThrow();
 
-      expect(db.transaction).not.toHaveBeenCalled();
+      expect(mockDb.transaction).not.toHaveBeenCalled();
       expect(insertMock).not.toHaveBeenCalled();
     });
   });
@@ -57,7 +60,7 @@ describe("PortRepository Tests", () => {
 
       await deletePortList(mockPortData);
 
-      expect(db.transaction).toHaveBeenCalledTimes(1);
+      expect(mockDb.transaction).toHaveBeenCalledTimes(1);
       expect(deleteMock).toHaveBeenCalledTimes(1);
       expect(deleteMock).toHaveBeenCalledWith(expect.anything());
     });
@@ -127,7 +130,7 @@ describe("PortRepository Tests", () => {
       ];
       const whitelistRows = [{ id: 3, value: 400 }];
 
-      (db.select as jest.Mock)
+      (mockDb.select as jest.Mock)
         .mockReturnValueOnce({
           from: () => ({
             where: async () => blacklistRows,
@@ -146,12 +149,12 @@ describe("PortRepository Tests", () => {
         whitelist: whitelistRows,
       });
 
-      expect(db.select).toHaveBeenCalledTimes(2);
-      expect(db.select).toHaveBeenNthCalledWith(1, {
+      expect(mockDb.select).toHaveBeenCalledTimes(2);
+      expect(mockDb.select).toHaveBeenNthCalledWith(1, {
         id: portTable.id,
         value: portTable.value,
       });
-      expect(db.select).toHaveBeenNthCalledWith(2, {
+      expect(mockDb.select).toHaveBeenNthCalledWith(2, {
         id: portTable.id,
         value: portTable.value,
       });
@@ -169,7 +172,7 @@ describe("PortRepository Tests", () => {
         { value: 282, mode: "blacklist" },
       ];
 
-      (db.select as jest.Mock).mockReturnValue({
+      (mockDb.select as jest.Mock).mockReturnValue({
         from: () => ({
           where: async () => mockRows,
         }),
@@ -179,7 +182,7 @@ describe("PortRepository Tests", () => {
       const result = await getAllExistingPorts(input);
 
       expect(result).toEqual(mockRows);
-      expect(db.select).toHaveBeenCalledWith({
+      expect(mockDb.select).toHaveBeenCalledWith({
         value: portTable.value,
         mode: portTable.mode,
       });

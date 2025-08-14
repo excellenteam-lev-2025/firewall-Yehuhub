@@ -1,10 +1,11 @@
 import { UpdateAllInput } from "../schemas/UpdateListSchema";
-import { db } from "../services/DbService";
+import { getDb } from "../services/DbService";
 import { updateUrls } from "./UrlRepository";
 import { updatePorts } from "./PortRepository";
 import { updateIps } from "./IpRepository";
 
 export const toggleStatus = async (data: UpdateAllInput) => {
+  const db = getDb();
   const { urls, ports, ips } = data;
   return await db.transaction(async (tx) => {
     const updatedUrls = await updateUrls(urls, tx);

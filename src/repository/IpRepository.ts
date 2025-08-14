@@ -1,4 +1,4 @@
-import { db } from "../services/DbService";
+import { getDb } from "../services/DbService";
 import { config } from "../config/env";
 import { ipInsertSchema, IpListInput } from "../schemas/IpSchema";
 import { ipTable } from "../db/schema";
@@ -8,6 +8,7 @@ import { UpdateListInput } from "../schemas/UpdateListSchema";
 import { DbTransaction } from "../services/DbService";
 
 export const insertIpList = async (data: IpListInput): Promise<void> => {
+  const db = getDb();
   const { values, mode } = data;
   try {
     const records = values.map((ip) => {
@@ -28,6 +29,7 @@ export const insertIpList = async (data: IpListInput): Promise<void> => {
 };
 
 export const deleteIpList = async (data: IpListInput): Promise<void> => {
+  const db = getDb();
   const { values, mode } = data;
   try {
     await db.transaction(async (tx) => {
@@ -44,6 +46,7 @@ export const deleteIpList = async (data: IpListInput): Promise<void> => {
 };
 
 export const getAllExistingIps = async (data: IpListInput) => {
+  const db = getDb();
   const found = await db
     .select({ value: ipTable.value, mode: ipTable.mode })
     .from(ipTable)
@@ -55,6 +58,7 @@ export const getAllExistingIps = async (data: IpListInput) => {
 
 // caller catches the db error for it since errors here are not meaningful enough
 export const getAllIps = async () => {
+  const db = getDb();
   const [blacklist, whitelist] = await Promise.all([
     db
       .select({ id: ipTable.id, value: ipTable.value })
@@ -72,6 +76,7 @@ export const getAllIps = async () => {
 };
 
 export const updateIps = async (ips: UpdateListInput, tx: DbTransaction) => {
+  const db = getDb();
   if (ips.ids.length === 0) return [];
 
   const found = await tx
