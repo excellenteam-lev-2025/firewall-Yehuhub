@@ -53,14 +53,14 @@ export const removePorts = async (
     if (portsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more PORTS not found in the database" });
+        .json({ error: "One or more ports not found in the database" });
     }
 
     await deletePortList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while removing PORTS",
+      error: "Internal server error while removing ports",
     });
   }
 

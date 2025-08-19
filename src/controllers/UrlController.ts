@@ -51,14 +51,14 @@ export const removeUrls = async (
     if (urlsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more URLs not found in the database" });
+        .json({ error: "One or more urls not found in the database" });
     }
 
     await deleteUrlList({ values, mode });
   } catch (err) {
     console.log(err);
     return res.status(StatusCodes.INTERNAL_SERVER_ERROR).json({
-      error: "Internal server error while removing URLs",
+      error: "Internal server error while removing urls",
     });
   }
 

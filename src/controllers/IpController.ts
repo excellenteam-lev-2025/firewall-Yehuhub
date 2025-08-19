@@ -51,7 +51,7 @@ export const removeIp = async (
     if (ipsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
-        .json({ error: "One or more IP addresses not found in the database" });
+        .json({ error: "One or more ip addresses not found in the database" });
     }
 
     await deleteIpList({ values, mode });
