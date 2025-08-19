@@ -45,7 +45,7 @@ export const deletePortList = async (data: PortListInput): Promise<void> => {
   }
 };
 
-export const getAllExistingPorts = async (data: PortListInput) => {
+export const getAllDuplicatedPortsFromList = async (data: PortListInput) => {
   const db = getDb();
   const found = await db
     .select({ value: portTable.value, mode: portTable.mode })

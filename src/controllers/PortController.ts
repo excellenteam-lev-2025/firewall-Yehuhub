@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   insertPortList,
   deletePortList,
-  getAllExistingPorts,
+  getAllDuplicatedPortsFromList,
 } from "../repository/PortRepository";
 import { StatusCodes } from "http-status-codes";
 import { PortListInput, portListSchema } from "../schemas/PortSchema";
@@ -45,12 +45,11 @@ export const removePorts = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingPorts = await getAllExistingPorts({ mode, values });
-    const existingPorts = allExistingPorts.map((port) => port.value);
-    const portsNotExisting = values.filter(
-      (port) => !existingPorts.includes(port)
-    );
-    if (portsNotExisting.length > 0) {
+    const allExistingPorts = await getAllDuplicatedPortsFromList({
+      mode,
+      values,
+    });
+    if (allExistingPorts.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more ports not found in the database" });

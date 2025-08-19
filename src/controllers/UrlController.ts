@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   insertUrlList,
   deleteUrlList,
-  getAllExistingUrls,
+  getAllDuplicatedUrlsFromList,
 } from "../repository/UrlRepository";
 import { StatusCodes } from "http-status-codes";
 import { UrlListInput, urlListSchema } from "../schemas/UrlSchema";
@@ -45,10 +45,12 @@ export const removeUrls = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingUrls = await getAllExistingUrls({ mode, values });
-    const existingUrls = allExistingUrls.map((url) => url.value);
-    const urlsNotExisting = values.filter((url) => !existingUrls.includes(url));
-    if (urlsNotExisting.length > 0) {
+    const allExistingUrls = await getAllDuplicatedUrlsFromList({
+      mode,
+      values,
+    });
+
+    if (allExistingUrls.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more urls not found in the database" });
