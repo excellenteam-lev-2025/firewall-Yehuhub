@@ -4,10 +4,12 @@ import { testDbConnection } from "./services/DbService";
 import { config } from "./config/env";
 import "./config/logger";
 import { errorHandler } from "./middleware/ErrorHandler";
+import cors from "cors";
 
 const app: Application = express();
 
 app.use(express.json());
+app.use(cors());
 
 //routes
 app.use("/api/firewall", apiRouter);
