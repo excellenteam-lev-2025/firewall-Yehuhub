@@ -59,11 +59,11 @@ export const findExistingIps = async (data: IpListInput) => {
 export const getAllIps = async () => {
   const [blacklist, whitelist] = await Promise.all([
     db
-      .select({ id: ipTable.id, value: ipTable.value })
+      .select({ id: ipTable.id, value: ipTable.value, active: ipTable.active })
       .from(ipTable)
       .where(eq(ipTable.mode, config.constants.blacklist)),
     db
-      .select({ id: ipTable.id, value: ipTable.value })
+      .select({ id: ipTable.id, value: ipTable.value, active: ipTable.active })
       .from(ipTable)
       .where(eq(ipTable.mode, config.constants.whitelist)),
   ]);

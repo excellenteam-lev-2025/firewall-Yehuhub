@@ -57,11 +57,19 @@ export const findExistingUrls = async (data: UrlListInput) => {
 export const getAllUrls = async () => {
   const [blacklist, whitelist] = await Promise.all([
     db
-      .select({ id: urlTable.id, value: urlTable.value })
+      .select({
+        id: urlTable.id,
+        value: urlTable.value,
+        active: urlTable.active,
+      })
       .from(urlTable)
       .where(eq(urlTable.mode, config.constants.blacklist)),
     db
-      .select({ id: urlTable.id, value: urlTable.value })
+      .select({
+        id: urlTable.id,
+        value: urlTable.value,
+        active: urlTable.active,
+      })
       .from(urlTable)
       .where(eq(urlTable.mode, config.constants.whitelist)),
   ]);

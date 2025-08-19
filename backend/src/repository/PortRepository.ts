@@ -58,11 +58,19 @@ export const findExistingPorts = async (data: PortListInput) => {
 export const getAllPorts = async () => {
   const [blacklist, whitelist] = await Promise.all([
     db
-      .select({ id: portTable.id, value: portTable.value })
+      .select({
+        id: portTable.id,
+        value: portTable.value,
+        active: portTable.active,
+      })
       .from(portTable)
       .where(eq(portTable.mode, config.constants.blacklist)),
     db
-      .select({ id: portTable.id, value: portTable.value })
+      .select({
+        id: portTable.id,
+        value: portTable.value,
+        active: portTable.active,
+      })
       .from(portTable)
       .where(eq(portTable.mode, config.constants.whitelist)),
   ]);
