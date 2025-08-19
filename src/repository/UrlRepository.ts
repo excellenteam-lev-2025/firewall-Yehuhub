@@ -5,10 +5,10 @@ import { ZodError } from "zod";
 import { eq, and, inArray } from "drizzle-orm";
 import { urlInsertSchema, UrlListInput } from "../schemas/UrlSchema";
 import { UpdateListInput } from "../schemas/UpdateListSchema";
-import { PgTransaction } from "drizzle-orm/pg-core";
+
+const db = getDb();
 
 export const insertUrlList = async (data: UrlListInput): Promise<void> => {
-  const db = getDb();
   const { values, mode } = data;
   try {
     const records = values.map((ip) => {
@@ -29,7 +29,6 @@ export const insertUrlList = async (data: UrlListInput): Promise<void> => {
 };
 
 export const deleteUrlList = async (data: UrlListInput): Promise<void> => {
-  const db = getDb();
   const { values, mode } = data;
   try {
     await db.transaction(async (tx) => {
@@ -46,7 +45,6 @@ export const deleteUrlList = async (data: UrlListInput): Promise<void> => {
 };
 
 export const getAllDuplicatedUrlsFromList = async (data: UrlListInput) => {
-  const db = getDb();
   const found = await db
     .select({ value: urlTable.value, mode: urlTable.mode })
     .from(urlTable)
@@ -57,7 +55,6 @@ export const getAllDuplicatedUrlsFromList = async (data: UrlListInput) => {
 };
 
 export const getAllUrls = async () => {
-  const db = getDb();
   const [blacklist, whitelist] = await Promise.all([
     db
       .select({ id: urlTable.id, value: urlTable.value })

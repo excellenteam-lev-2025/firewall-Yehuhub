@@ -7,8 +7,9 @@ import { portInsertSchema, PortListInput } from "../schemas/PortSchema";
 import { UpdateListInput } from "../schemas/UpdateListSchema";
 import { DbTransaction } from "../services/DbService";
 
+const db = getDb();
+
 export const insertPortList = async (data: PortListInput): Promise<void> => {
-  const db = getDb();
   const { values, mode } = data;
   try {
     const records = values.map((ip) => {
@@ -29,7 +30,6 @@ export const insertPortList = async (data: PortListInput): Promise<void> => {
 };
 
 export const deletePortList = async (data: PortListInput): Promise<void> => {
-  const db = getDb();
   const { values, mode } = data;
   try {
     await db.transaction(async (tx) => {
@@ -46,7 +46,6 @@ export const deletePortList = async (data: PortListInput): Promise<void> => {
 };
 
 export const getAllDuplicatedPortsFromList = async (data: PortListInput) => {
-  const db = getDb();
   const found = await db
     .select({ value: portTable.value, mode: portTable.mode })
     .from(portTable)
@@ -57,7 +56,6 @@ export const getAllDuplicatedPortsFromList = async (data: PortListInput) => {
 };
 
 export const getAllPorts = async () => {
-  const db = getDb();
   const [blacklist, whitelist] = await Promise.all([
     db
       .select({ id: portTable.id, value: portTable.value })
