@@ -51,7 +51,7 @@ export const removePorts = async (
     });
     const existingPorts = allExistingPorts.map((port) => port.value);
     const portsNotExisting = values.filter((ip) => !existingPorts.includes(ip));
-    if (allExistingPorts.length > 0) {
+    if (portsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more ports not found in the database" });
