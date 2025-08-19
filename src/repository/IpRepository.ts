@@ -45,7 +45,7 @@ export const deleteIpList = async (data: IpListInput): Promise<void> => {
   }
 };
 
-export const getAllDuplicatedIpsFromList = async (data: IpListInput) => {
+export const findExistingIps = async (data: IpListInput) => {
   const found = await db
     .select({ value: ipTable.value, mode: ipTable.mode })
     .from(ipTable)

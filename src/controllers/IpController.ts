@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   insertIpList,
   deleteIpList,
-  getAllDuplicatedIpsFromList,
+  findExistingIps,
 } from "../repository/IpRepository";
 import { StatusCodes } from "http-status-codes";
 import { IpListInput, ipListSchema } from "../schemas/IpSchema";
@@ -45,9 +45,10 @@ export const removeIp = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingIps = await getAllDuplicatedIpsFromList({ mode, values });
-
-    if (allExistingIps.length > 0) {
+    const allExistingIps = await findExistingIps({ mode, values });
+    const existingIps = allExistingIps.map((ip) => ip.value);
+    const ipsNotExisting = values.filter((ip) => !existingIps.includes(ip));
+    if (ipsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more ip addresses not found in the database" });

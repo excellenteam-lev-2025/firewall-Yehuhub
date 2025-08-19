@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import {
   insertPortList,
   deletePortList,
-  getAllDuplicatedPortsFromList,
+  findExistingPorts,
 } from "../repository/PortRepository";
 import { StatusCodes } from "http-status-codes";
 import { PortListInput, portListSchema } from "../schemas/PortSchema";
@@ -45,10 +45,12 @@ export const removePorts = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingPorts = await getAllDuplicatedPortsFromList({
+    const allExistingPorts = await findExistingPorts({
       mode,
       values,
     });
+    const existingPorts = allExistingPorts.map((port) => port.value);
+    const portsNotExisting = values.filter((ip) => !existingPorts.includes(ip));
     if (allExistingPorts.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)

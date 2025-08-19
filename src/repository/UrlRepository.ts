@@ -44,7 +44,7 @@ export const deleteUrlList = async (data: UrlListInput): Promise<void> => {
   }
 };
 
-export const getAllDuplicatedUrlsFromList = async (data: UrlListInput) => {
+export const findExistingUrls = async (data: UrlListInput) => {
   const found = await db
     .select({ value: urlTable.value, mode: urlTable.mode })
     .from(urlTable)

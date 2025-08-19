@@ -2,10 +2,11 @@ import { Request, Response, NextFunction } from "express";
 import {
   insertUrlList,
   deleteUrlList,
-  getAllDuplicatedUrlsFromList,
+  findExistingUrls,
 } from "../repository/UrlRepository";
 import { StatusCodes } from "http-status-codes";
 import { UrlListInput, urlListSchema } from "../schemas/UrlSchema";
+import { ur } from "zod/v4/locales";
 
 export const validateUrlList = (
   req: Request<{}, {}, UrlListInput>,
@@ -45,12 +46,13 @@ export const removeUrls = async (
   const { mode, values } = req.body;
 
   try {
-    const allExistingUrls = await getAllDuplicatedUrlsFromList({
+    const allExistingUrls = await findExistingUrls({
       mode,
       values,
     });
-
-    if (allExistingUrls.length > 0) {
+    const existingUrls = allExistingUrls.map((url) => url.value);
+    const urlsNotExisting = values.filter((url) => !existingUrls.includes(url));
+    if (urlsNotExisting.length > 0) {
       return res
         .status(StatusCodes.BAD_REQUEST)
         .json({ error: "One or more urls not found in the database" });
