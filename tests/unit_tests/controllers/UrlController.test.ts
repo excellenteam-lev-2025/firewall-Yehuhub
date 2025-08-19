@@ -6,7 +6,7 @@ import {
 import { ZodError } from "zod";
 
 import {
-  getAllExistingUrls,
+  findExistingUrls,
   insertUrlList,
   deleteUrlList,
 } from "../../../src/repository/UrlRepository";
@@ -98,14 +98,14 @@ describe("UrlController Tests", () => {
 
     test("should delete URLs and return success if all URLs exist", async () => {
       req.body = { values: ["cool.com"], mode: "blacklist" };
-      (getAllExistingUrls as jest.Mock).mockResolvedValue([
+      (findExistingUrls as jest.Mock).mockResolvedValue([
         { value: "cool.com" },
       ]);
       (deleteUrlList as jest.Mock).mockResolvedValue(undefined);
 
       await removeUrls(req, res, next);
 
-      expect(getAllExistingUrls).toHaveBeenCalledWith({
+      expect(findExistingUrls).toHaveBeenCalledWith({
         mode: "blacklist",
         values: ["cool.com"],
       });
@@ -122,15 +122,15 @@ describe("UrlController Tests", () => {
       });
     });
 
-    test("should fail deleting URLs and return Bad Request", async () => {
+    test("should fail deleting urls when a url does not exist in the db and return Bad Request", async () => {
       req.body = { values: ["cool.com", "uncool.com"], mode: "blacklist" };
-      (getAllExistingUrls as jest.Mock).mockResolvedValue([
+      (findExistingUrls as jest.Mock).mockResolvedValue([
         { value: "cool.com" },
       ]);
 
       await removeUrls(req, res, next);
 
-      expect(getAllExistingUrls).toHaveBeenCalledWith({
+      expect(findExistingUrls).toHaveBeenCalledWith({
         values: ["cool.com", "uncool.com"],
         mode: "blacklist",
       });
@@ -138,7 +138,7 @@ describe("UrlController Tests", () => {
       expect(deleteUrlList).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: "One or more URLs not found in the database",
+        error: "One or more urls not found in the database",
       });
     });
   });

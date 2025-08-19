@@ -1,13 +1,3 @@
-import {
-  insertPortList,
-  deletePortList,
-  updatePorts,
-  getAllExistingPorts,
-  getAllPorts,
-} from "../../../src/repository/PortRepository";
-import { getDb } from "../../../src/services/DbService";
-import { portTable } from "../../../src/db/schema";
-
 const mockDb = {
   select: jest.fn(),
   transaction: jest.fn(),
@@ -17,6 +7,16 @@ const mockDb = {
 jest.mock("../../../src/services/DbService", () => ({
   getDb: jest.fn(() => mockDb),
 }));
+
+import {
+  insertPortList,
+  deletePortList,
+  updatePorts,
+  findExistingPorts,
+  getAllPorts,
+} from "../../../src/repository/PortRepository";
+import { getDb } from "../../../src/services/DbService";
+import { portTable } from "../../../src/db/schema";
 
 describe("PortRepository Tests", () => {
   const insertMock = jest.fn();
@@ -179,7 +179,7 @@ describe("PortRepository Tests", () => {
       });
 
       const input = { values: [334, 282], mode: "blacklist" };
-      const result = await getAllExistingPorts(input);
+      const result = await findExistingPorts(input);
 
       expect(result).toEqual(mockRows);
       expect(mockDb.select).toHaveBeenCalledWith({

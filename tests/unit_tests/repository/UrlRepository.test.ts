@@ -1,13 +1,3 @@
-import {
-  insertUrlList,
-  deleteUrlList,
-  getAllUrls,
-  getAllExistingUrls,
-  updateUrls,
-} from "../../../src/repository/UrlRepository";
-import { getDb } from "../../../src/services/DbService";
-import { urlTable } from "../../../src/db/schema";
-
 const mockDb = {
   select: jest.fn(),
   transaction: jest.fn(),
@@ -17,6 +7,16 @@ const mockDb = {
 jest.mock("../../../src/services/DbService", () => ({
   getDb: jest.fn(() => mockDb),
 }));
+
+import {
+  insertUrlList,
+  deleteUrlList,
+  getAllUrls,
+  findExistingUrls,
+  updateUrls,
+} from "../../../src/repository/UrlRepository";
+import { getDb } from "../../../src/services/DbService";
+import { urlTable } from "../../../src/db/schema";
 
 describe("UrlRepository Tests", () => {
   const insertMock = jest.fn();
@@ -188,7 +188,7 @@ describe("UrlRepository Tests", () => {
         values: ["cool.com", "really-cool.com"],
         mode: "blacklist",
       };
-      const result = await getAllExistingUrls(input);
+      const result = await findExistingUrls(input);
 
       expect(result).toEqual(mockRows);
       expect(mockDb.select).toHaveBeenCalledWith({

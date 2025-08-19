@@ -1,13 +1,3 @@
-import {
-  insertIpList,
-  deleteIpList,
-  updateIps,
-  getAllIps,
-  getAllExistingIps,
-} from "../../../src/repository/IpRepository";
-import { getDb } from "../../../src/services/DbService";
-import { ipTable } from "../../../src/db/schema";
-
 const mockDb = {
   select: jest.fn(),
   transaction: jest.fn(),
@@ -17,6 +7,16 @@ const mockDb = {
 jest.mock("../../../src/services/DbService", () => ({
   getDb: jest.fn(() => mockDb),
 }));
+
+import {
+  insertIpList,
+  deleteIpList,
+  updateIps,
+  getAllIps,
+  findExistingIps,
+} from "../../../src/repository/IpRepository";
+import { getDb } from "../../../src/services/DbService";
+import { ipTable } from "../../../src/db/schema";
 
 describe("IpRepository Tests", () => {
   const insertMock = jest.fn();
@@ -179,7 +179,7 @@ describe("IpRepository Tests", () => {
       });
 
       const input = { values: ["1.1.1.1", "2.2.2.2"], mode: "blacklist" };
-      const result = await getAllExistingIps(input);
+      const result = await findExistingIps(input);
 
       expect(result).toEqual(mockRows);
       expect(mockDb.select).toHaveBeenCalledWith({

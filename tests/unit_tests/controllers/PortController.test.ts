@@ -5,7 +5,7 @@ import {
 } from "../../../src/controllers/PortController";
 import { ZodError } from "zod";
 import {
-  getAllExistingPorts,
+  findExistingPorts,
   insertPortList,
   deletePortList,
 } from "../../../src/repository/PortRepository";
@@ -13,8 +13,8 @@ import { StatusCodes } from "http-status-codes";
 
 jest.mock("../../../src/repository/PortRepository");
 
-describe("IpController Tests", () => {
-  describe("validateIpList Middleware", () => {
+describe("PortController Tests", () => {
+  describe("validatePortList Middleware", () => {
     let req: any;
     let res: any;
     let next: jest.Mock;
@@ -35,7 +35,7 @@ describe("IpController Tests", () => {
     });
 
     test("calls next with error if request body is invalid", () => {
-      req.body = { values: ["bad-ip"], mode: "blacklist" }; // invalid according to schema
+      req.body = { values: ["bad-port"], mode: "blacklist" }; // invalid according to schema
 
       validatePortList(req, res, next);
 
@@ -97,12 +97,12 @@ describe("IpController Tests", () => {
 
     test("should delete PORTS and return success if all PORTS exist", async () => {
       req.body = { values: [334], mode: "blacklist" };
-      (getAllExistingPorts as jest.Mock).mockResolvedValue([{ value: 334 }]);
+      (findExistingPorts as jest.Mock).mockResolvedValue([{ value: 334 }]);
       (deletePortList as jest.Mock).mockResolvedValue(undefined);
 
       await removePorts(req, res, next);
 
-      expect(getAllExistingPorts).toHaveBeenCalledWith({
+      expect(findExistingPorts).toHaveBeenCalledWith({
         mode: "blacklist",
         values: [334],
       });
@@ -119,23 +119,21 @@ describe("IpController Tests", () => {
       });
     });
 
-    test("should fail deleting PORTS and return Bad Request", async () => {
-      req.body = { values: ["1.1.1.1", "2.2.2.2"], mode: "blacklist" };
-      (getAllExistingPorts as jest.Mock).mockResolvedValue([
-        { value: "1.1.1.1" },
-      ]);
+    test("should fail deleting ports when a port does not exist in the db and return Bad Request", async () => {
+      req.body = { values: [333, 222], mode: "blacklist" };
+      (findExistingPorts as jest.Mock).mockResolvedValue([{ value: 333 }]);
 
       await removePorts(req, res, next);
 
-      expect(getAllExistingPorts).toHaveBeenCalledWith({
-        values: ["1.1.1.1", "2.2.2.2"],
+      expect(findExistingPorts).toHaveBeenCalledWith({
+        values: [333, 222],
         mode: "blacklist",
       });
 
       expect(deletePortList).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: "One or more PORTS not found in the database",
+        error: "One or more ports not found in the database",
       });
     });
   });

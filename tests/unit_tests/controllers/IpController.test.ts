@@ -5,7 +5,7 @@ import {
 } from "../../../src/controllers/IpController";
 import { ZodError } from "zod";
 import {
-  getAllExistingIps,
+  findExistingIps,
   insertIpList,
   deleteIpList,
 } from "../../../src/repository/IpRepository";
@@ -97,14 +97,14 @@ describe("IpController Tests", () => {
 
     test("should delete IPs and return success if all IPs exist", async () => {
       req.body = { values: ["1.1.1.1"], mode: "blacklist" };
-      (getAllExistingIps as jest.Mock).mockResolvedValue([
-        { value: "1.1.1.1" },
+      (findExistingIps as jest.Mock).mockResolvedValue([
+        { value: "1.1.1.1", mode: "blacklist" },
       ]);
       (deleteIpList as jest.Mock).mockResolvedValue(undefined);
 
       await removeIp(req, res, next);
 
-      expect(getAllExistingIps).toHaveBeenCalledWith({
+      expect(findExistingIps).toHaveBeenCalledWith({
         mode: "blacklist",
         values: ["1.1.1.1"],
       });
@@ -121,15 +121,13 @@ describe("IpController Tests", () => {
       });
     });
 
-    test("should fail deleting IPs and return Bad Request", async () => {
+    test("should fail deleting ips when an ip does not exist in the db and return Bad Request", async () => {
       req.body = { values: ["1.1.1.1", "2.2.2.2"], mode: "blacklist" };
-      (getAllExistingIps as jest.Mock).mockResolvedValue([
-        { value: "1.1.1.1" },
-      ]);
+      (findExistingIps as jest.Mock).mockResolvedValue([{ value: "1.1.1.1" }]);
 
       await removeIp(req, res, next);
 
-      expect(getAllExistingIps).toHaveBeenCalledWith({
+      expect(findExistingIps).toHaveBeenCalledWith({
         values: ["1.1.1.1", "2.2.2.2"],
         mode: "blacklist",
       });
@@ -137,7 +135,7 @@ describe("IpController Tests", () => {
       expect(deleteIpList).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
-        error: "One or more IP addresses not found in the database",
+        error: "One or more ip addresses not found in the database",
       });
     });
   });

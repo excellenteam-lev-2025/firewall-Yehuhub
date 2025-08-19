@@ -1,9 +1,3 @@
-import { toggleStatus } from "../../../src/repository/RulesRepository";
-import { getDb } from "../../../src/services/DbService";
-import { updateUrls } from "../../../src/repository/UrlRepository";
-import { updatePorts } from "../../../src/repository/PortRepository";
-import { updateIps } from "../../../src/repository/IpRepository";
-
 const mockDb = {
   select: jest.fn(),
   transaction: jest.fn(),
@@ -13,6 +7,12 @@ const mockDb = {
 jest.mock("../../../src/services/DbService", () => ({
   getDb: jest.fn(() => mockDb),
 }));
+
+import { toggleStatus } from "../../../src/repository/RulesRepository";
+import { getDb } from "../../../src/services/DbService";
+import { updateUrls } from "../../../src/repository/UrlRepository";
+import { updatePorts } from "../../../src/repository/PortRepository";
+import { updateIps } from "../../../src/repository/IpRepository";
 
 jest.mock("../../../src/repository/IpRepository");
 jest.mock("../../../src/repository/UrlRepository");
