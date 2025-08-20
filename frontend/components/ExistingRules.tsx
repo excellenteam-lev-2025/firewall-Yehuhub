@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { TabContent } from "./TabContent";
 import { FirewallResponse, Rule } from "@/types/firewall";
+import { Button } from "./ui/button";
 
 const API_URL = "http://localhost:3000/api/firewall";
 
@@ -121,18 +122,13 @@ export const ExistingRules = () => {
 
       <div className="flex space-x-4 mb-8">
         {tabs.map((tab) => (
-          <button
+          <Button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-6 py-2 rounded-lg font-medium transition 
-              ${
-                activeTab === tab.key
-                  ? "bg-blue-500 text-white"
-                  : "bg-gray-600 text-gray-200 hover:bg-gray-500"
-              }`}
+            variant={activeTab === tab.key ? "default" : "secondary"}
           >
             {tab.label}
-          </button>
+          </Button>
         ))}
       </div>
 

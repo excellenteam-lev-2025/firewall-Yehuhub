@@ -1,4 +1,5 @@
 import { FirewallResponse, Rule } from "@/types/firewall";
+import { Button } from "./ui/button";
 
 interface RulesListProps {
   category: keyof FirewallResponse;
@@ -30,25 +31,22 @@ export const RulesList: React.FC<RulesListProps> = ({
       {rules.map((rule) => (
         <li
           key={rule.id}
-          className="flex justify-between items-center p-2 bg-gray-600 rounded border border-gray-500 text-white"
+          className="flex justify-between items-center p-2 bg-gray-600 rounded border border-gray-500"
         >
           <span>{rule.value}</span>
-          <button
+          <Button
+            variant={rule.active ? "default" : "secondary"}
             onClick={() => toggleRuleActive(category, mode, rule.id)}
-            className={`px-4 py-1 rounded font-medium transition ${
-              rule.active
-                ? "bg-green-700 hover:bg-green-600"
-                : "bg-red-700 hover:bg-red-600"
-            }`}
           >
             {rule.active ? "Active" : "Inactive"}
-          </button>
-          <button
+          </Button>
+          <Button
+            variant="destructive"
             onClick={() => deleteRule(rule, mode, category)}
-            className="px-4 py-1 bg-red-800 hover:bg-red-700 rounded font-medium"
           >
+            {" "}
             Delete
-          </button>
+          </Button>
         </li>
       ))}
     </ul>
