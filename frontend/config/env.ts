@@ -48,4 +48,7 @@ export const config = {
     SERVER_URL,
     LOG_FILE_PATH,
   },
+  constants: {
+    RULES_URL: "http://localhost:3000/api/firewall/rules",
+  },
 };

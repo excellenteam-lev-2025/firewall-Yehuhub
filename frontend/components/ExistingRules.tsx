@@ -1,25 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { TabContent } from "./TabContent";
+import { FirewallResponse, Rule } from "@/types/firewall";
 
-interface Rule {
-  id: number;
-  value: string | number;
-  active: boolean;
-}
+const API_URL = "http://localhost:3000/api/firewall";
 
-interface RulesByMode {
-  blacklist: Rule[];
-  whitelist: Rule[];
-}
-
-interface FirewallResponse {
-  ips: RulesByMode;
-  urls: RulesByMode;
-  ports: RulesByMode;
-}
-
-const API_URL = "http://localhost:3000/api/firewall/rules";
+const categoryMap: Record<string, string> = {
+  ips: "ip",
+  ports: "port",
+  urls: "url",
+};
 
 export const ExistingRules = () => {
   const [activeTab, setActiveTab] = useState<"urls" | "ips" | "ports">("urls");
@@ -38,7 +29,7 @@ export const ExistingRules = () => {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(API_URL);
+        const res = await fetch(`${API_URL}/rules`);
         if (!res.ok) throw new Error(`Request failed with ${res.status}`);
         const json = await res.json();
         setData(json);
@@ -69,14 +60,13 @@ export const ExistingRules = () => {
     > = {};
     body[category] = { ids: [id], mode, active: newActiveStatus };
     try {
-      const res = await fetch(API_URL, {
+      const res = await fetch(`${API_URL}/rules`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body),
       });
       if (!res.ok) throw new Error(`Failed to update rule: ${res.status}`);
 
-      // Update local state
       setData((prev) => {
         if (!prev) return prev;
         const updated = { ...prev };
@@ -90,55 +80,39 @@ export const ExistingRules = () => {
     }
   };
 
-  const renderRulesList = (
-    category: keyof FirewallResponse,
+  const deleteRule = async (
+    rule: Rule,
     mode: "blacklist" | "whitelist",
-    rules: Rule[]
+    category: keyof FirewallResponse
   ) => {
-    if (rules.length === 0) return <p className="text-gray-300">No rules</p>;
-    return (
-      <ul className="space-y-2">
-        {rules.map((rule) => (
-          <li
-            key={rule.id}
-            className="flex justify-between items-center p-2 bg-gray-600 rounded border border-gray-500 text-white"
-          >
-            <span>{rule.value}</span>
-            <button
-              onClick={() => toggleRuleActive(category, mode, rule.id)}
-              className={`px-4 py-1 rounded font-medium transition ${
-                rule.active
-                  ? "bg-green-700 hover:bg-green-600"
-                  : "bg-red-700 hover:bg-red-600"
-              }`}
-            >
-              {rule.active ? "Active" : "Inactive"}
-            </button>
-          </li>
-        ))}
-      </ul>
-    );
-  };
+    if (!data) return;
 
-  const renderTabContent = () => {
-    if (loading) return <p className="text-yellow-300">Loading...</p>;
-    if (error) return <p className="text-red-400">{error}</p>;
-    if (!data) return null;
+    const ruleToDelete = data[category][mode].find((r) => r.id === rule.id);
+    if (!ruleToDelete) return;
 
-    const current = data[activeTab];
+    const body = { values: [rule.value], mode };
+    const endpoint = categoryMap[category];
 
-    return (
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-xl text-white mb-2">Blacklist</h2>
-          {renderRulesList(activeTab, "blacklist", current.blacklist)}
-        </div>
-        <div>
-          <h2 className="text-xl text-white mb-2">Whitelist</h2>
-          {renderRulesList(activeTab, "whitelist", current.whitelist)}
-        </div>
-      </div>
-    );
+    console.log(body, `${API_URL}/${endpoint}`);
+    try {
+      const res = await fetch(`${API_URL}/${endpoint}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error(`Failed to delete rule: ${res.status}`);
+
+      setData((prev) => {
+        if (!prev) return prev;
+        const updated = { ...prev };
+        updated[category][mode] = updated[category][mode].filter(
+          (r) => r.id !== rule.id
+        );
+        return updated;
+      });
+    } catch (err: any) {
+      alert(err.message || "Failed to delete rule");
+    }
   };
 
   return (
@@ -163,7 +137,16 @@ export const ExistingRules = () => {
       </div>
 
       <div className="bg-gray-700 rounded-xl shadow-lg w-full max-w-3xl p-8">
-        {renderTabContent()}
+        {
+          <TabContent
+            loading={loading}
+            error={error}
+            data={data}
+            activeTab={activeTab}
+            toggleRuleActive={toggleRuleActive}
+            deleteRule={deleteRule}
+          />
+        }
       </div>
     </div>
   );
