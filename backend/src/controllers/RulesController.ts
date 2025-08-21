@@ -24,12 +24,19 @@ export const getAllRules = async (
   res: Response,
   next: NextFunction
 ): Promise<Response> => {
+  const type = req.query.type as "ips" | "urls" | "ports";
   try {
-    const ips = await getAllIps();
-    const urls = await getAllUrls();
-    const ports = await getAllPorts();
+    const data = {
+      ips: await getAllIps(),
+      urls: await getAllUrls(),
+      ports: await getAllPorts(),
+    };
 
-    return res.status(StatusCodes.OK).json({ ips, urls, ports });
+    if (!type) {
+      return res.status(StatusCodes.OK).json(data);
+    }
+
+    return res.status(StatusCodes.OK).json(data[type]);
   } catch (err) {
     return res
       .status(StatusCodes.INTERNAL_SERVER_ERROR)
