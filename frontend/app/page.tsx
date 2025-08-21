@@ -1,35 +1,13 @@
-"use client";
-
-import { useState } from "react";
-import { ExistingRules } from "@/components/ExistingRules";
-import { RulesAddition } from "@/components/RulesAddition";
-
-const pages = {
-  home: "home",
-  form: "form",
-};
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Home() {
-  const [page, setPage] = useState(pages.home);
   return (
-    <>
-      <div className="bg-gray-700 flex ">
-        <div className="ml-20">
-          <button
-            className="mr-6 cursor-pointer p-2 hover:bg-gray-600 rounded-sm"
-            onClick={() => setPage(pages.home)}
-          >
-            Existing Rules
-          </button>
-          <button
-            className="mr-6 cursor-pointer p-2 hover:bg-gray-600 rounded-sm"
-            onClick={() => setPage(pages.form)}
-          >
-            Rules Addition
-          </button>
-        </div>
-      </div>
-      {page === pages.home ? <ExistingRules /> : <RulesAddition />}
-    </>
+    <div className="flex min-h-screen items-center justify-center bg-secondary">
+      <Card className="max-w-md w-full p-6 text-center shadow-lg rounded-2xl">
+        <CardContent>
+          <h1 className="text-4xl font-bold mb-4">HOMIE</h1>
+        </CardContent>
+      </Card>
+    </div>
   );
 }

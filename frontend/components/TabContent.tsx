@@ -35,7 +35,7 @@ export const TabContent: React.FC<TabContentProps> = ({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl text-white mb-2">Blacklist</h2>
+        <h2 className="text-xl mb-2">Blacklist</h2>
         <RulesList
           category={activeTab}
           mode="blacklist"
@@ -45,7 +45,7 @@ export const TabContent: React.FC<TabContentProps> = ({
         />
       </div>
       <div>
-        <h2 className="text-xl text-white mb-2">Whitelist</h2>
+        <h2 className="text-xl mb-2">Whitelist</h2>
         <RulesList
           category={activeTab}
           mode="whitelist"

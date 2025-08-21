@@ -117,8 +117,8 @@ export const ExistingRules = () => {
   };
 
   return (
-    <div className="bg-gray-800 min-h-screen flex flex-col items-center p-10">
-      <h1 className="text-4xl font-bold text-white mb-8">Existing Rules</h1>
+    <div className=" min-h-screen flex flex-col items-center p-10">
+      <h1 className="text-4xl font-bold mb-8">Existing Rules</h1>
 
       <div className="flex space-x-4 mb-8">
         {tabs.map((tab) => (
@@ -132,7 +132,7 @@ export const ExistingRules = () => {
         ))}
       </div>
 
-      <div className="bg-gray-700 rounded-xl shadow-lg w-full max-w-3xl p-8">
+      <div className="bg-secondary border rounded-xl shadow-lg w-full max-w-3xl p-8">
         {
           <TabContent
             loading={loading}

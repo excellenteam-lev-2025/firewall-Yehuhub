@@ -2,6 +2,18 @@
 
 import { useState } from "react";
 import { v4 as uuidv4 } from "uuid";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "./ui/input";
+import { Button } from "./ui/button";
+import { X } from "lucide-react";
 
 interface Rules {
   id: string;
@@ -56,8 +68,8 @@ export const RulesAddition = () => {
   };
 
   return (
-    <div className="bg-gray-800 min-h-screen flex justify-center items-start p-10">
-      <div className="bg-gray-700 rounded-xl shadow-lg w-full max-w-2xl p-8">
+    <div className="bg-background min-h-screen flex justify-center items-start p-10">
+      <div className="border bg-secondary rounded-xl shadow-lg w-full max-w-2xl p-8">
         <h1 className="text-4xl font-bold text-white mb-6 text-center">
           Add Firewall Rules
         </h1>
@@ -67,31 +79,44 @@ export const RulesAddition = () => {
             <label htmlFor="ruleType" className="mb-2">
               Rule Type
             </label>
-            <select
-              id="ruleType"
+
+            <Select
               value={rulesType}
-              onChange={(e) => setRulesType(e.target.value)}
-              className="p-2 rounded-lg border border-gray-400"
+              onValueChange={(value) => setRulesType(value)}
             >
-              <option value="url">URL</option>
-              <option value="ip">IP</option>
-              <option value="port">Port</option>
-            </select>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select a Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Type</SelectLabel>
+                  <SelectItem value="url">URL</SelectItem>
+                  <SelectItem value="ip">IP</SelectItem>
+                  <SelectItem value="port">Port</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex flex-col mb-6 w-1/3">
             <label htmlFor="ruleMode" className="mb-2">
               Rule Mode
             </label>
-            <select
-              id="ruleMode"
+            <Select
               value={rulesMode}
-              onChange={(e) => setRulesMode(e.target.value)}
-              className="p-2 rounded-lg border border-gray-400"
+              onValueChange={(value) => setRulesMode(value)}
             >
-              <option value="blacklist">Blacklist</option>
-              <option value="whitelist">Whitelist</option>
-            </select>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Select a mode" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectLabel>Mode</SelectLabel>
+                  <SelectItem value="whitelist">Whitelist</SelectItem>
+                  <SelectItem value="blacklist">Blacklist</SelectItem>
+                </SelectGroup>
+              </SelectContent>
+            </Select>
           </div>
         </div>
 
@@ -99,7 +124,7 @@ export const RulesAddition = () => {
           {rulesAdditionList.map((rule, index) => (
             <div
               key={rule.id}
-              className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 bg-gray-600 rounded-md border border-gray-500"
+              className="flex flex-col sm:flex-row sm:items-center gap-2 p-3 rounded-md border border-gray-500"
             >
               <label
                 htmlFor={rule.id}
@@ -107,11 +132,10 @@ export const RulesAddition = () => {
               >
                 Rule {index + 1}
               </label>
-              <input
+              <Input
                 id={rule.id}
                 type="text"
-                placeholder="Enter rule"
-                className="w-full p-2 rounded-md border border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                placeholder="Enter Rule"
                 onChange={(e) =>
                   setRulesAdditionList((prev) =>
                     prev.map((r) =>
@@ -120,25 +144,25 @@ export const RulesAddition = () => {
                   )
                 }
               />
-              <button
+              <Button
+                variant="destructive"
                 type="button"
                 onClick={() =>
                   setRulesAdditionList((prev) =>
                     prev.filter((r) => r.id !== rule.id)
                   )
                 }
-                className="text-red-400 font-bold px-3 py-1 rounded hover:bg-red-600 hover:text-white transition"
               >
-                X
-              </button>
+                <X />
+              </Button>
             </div>
           ))}
         </div>
 
         <div className="flex justify-center mt-6 gap-4">
-          <button
+          <Button
+            variant="secondary"
             type="button"
-            className="px-6 py-2 rounded-lg bg-gray-500 hover:bg-gray-400 text-white font-medium transition"
             onClick={() =>
               setRulesAdditionList([
                 ...rulesAdditionList,
@@ -148,24 +172,17 @@ export const RulesAddition = () => {
             disabled={loading}
           >
             Add Rule
-          </button>
+          </Button>
 
-          <button
-            type="button"
-            className="px-6 py-2 rounded-lg bg-blue-500 hover:bg-blue-600 text-white font-medium transition"
-            onClick={addRules}
-            disabled={loading}
-          >
+          <Button type="button" onClick={addRules} disabled={loading}>
             Submit
-          </button>
+          </Button>
         </div>
         {(loading || error || data) && (
-          <div className="flex justify-center mt-6  bg-gray-600 border border-gray-400 p-2 rounded-lg ">
+          <div className="flex justify-center mt-6 border p-2 rounded-lg ">
             {loading && <p className="text-yellow-300">Submitting rules...</p>}
-            {error && <p className="text-red-400 font-bold">{error}</p>}
-            {data && (
-              <p className="text-green-400">Rules submitted successfully!</p>
-            )}
+            {error && <p className="text-destructive">{error}</p>}
+            {data && <p className="">Rules submitted successfully!</p>}
           </div>
         )}
       </div>

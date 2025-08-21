@@ -1,8 +1,10 @@
+"use client";
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { useState } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -19,12 +21,11 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const [isDark, setIsDark] = useState<boolean>(true);
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-800 text-white`}
-      >
-        <Navbar />
+    <html lang="en" className={isDark ? "dark" : ""}>
+      <body className={`${geistSans.variable} ${geistMono.variable}`}>
+        <Navbar setDarkMode={setIsDark} darkMode={isDark} />
         {children}
         <Footer />
       </body>
