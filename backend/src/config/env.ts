@@ -18,7 +18,7 @@ const envSchema = z.object({
     .transform(Number),
   DB_USER: z.string(),
   DB_PASSWORD: z.string(),
-  DB_IP: z.string().refine((val) => validator.isIP(val), "Invalid db ip"),
+  DB_IP: z.string(),
   DB_NAME: z.string(),
   DB_PORT: z.string().refine((val) => validator.isPort(val), "Invalid db port"),
   DB_CONNECTION_INTERVAL: z
