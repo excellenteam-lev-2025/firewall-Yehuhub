@@ -11,7 +11,10 @@ services:
       - pgdata:/var/lib/postgresql/data
 
   excellenteam-backend:
-    build: ./backend # path to your backend Dockerfile
+    build: 
+      context: ./backend        # path to your backend Dockerfile
+      dockerfile: Dockerfile    # optional if your file is named Dockerfile
+      network: host  
     ports:
       - "3000:3000"
     depends_on:
