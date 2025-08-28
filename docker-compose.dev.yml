@@ -14,7 +14,6 @@ services:
     build: 
       context: ./backend        # path to your backend Dockerfile
       dockerfile: Dockerfile    # optional if your file is named Dockerfile
-      network: host  
     ports:
       - "3000:3000"
     depends_on:
