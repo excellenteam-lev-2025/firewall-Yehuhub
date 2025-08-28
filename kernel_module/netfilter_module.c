@@ -22,8 +22,7 @@ struct blocked_ip{
     struct list_head list;
 };
 
-static LIST_HEAD(blocked_src_ip_list);
-static LIST_HEAD(blocked_dest_ip_list);
+static LIST_HEAD(blocked_ip_list);
 
 static void add_blocked_ip(const char *ip_str, struct list_head *list){
     struct blocked_ip *node;
@@ -37,17 +36,40 @@ static void add_blocked_ip(const char *ip_str, struct list_head *list){
     list_add(&node->list, list);
 };
 
-static void free_lists(void){
-    struct blocked_ip *node, *tmp;
+//--------------LIST OF BLOCKED PORTS----------------
+struct blocked_port{
+    u16 port;
+    struct list_head list;
+};
 
-    list_for_each_entry_safe(node, tmp, &blocked_src_ip_list, list){
-        list_del(&node->list);
-        kfree(node);
+static LIST_HEAD(blocked_port_list);
+
+static void add_blocked_port(const u16 port, struct list_head *list){
+    struct blocked_port *node;
+
+    node = kmalloc(sizeof(*node), GFP_KERNEL);
+    if (!node){
+        return;
+    }
+    
+    node->port = port;
+    list_add(&node->list, list);
+};
+
+//--------------FREE MEMORY FOR DATA STRUCTURES----------------
+
+static void free_lists(void){
+    struct blocked_ip *ip_node, *ip_tmp;
+    struct blocked_port *port_node, *port_tmp;
+
+    list_for_each_entry_safe(ip_node, ip_tmp, &blocked_ip_list, list){
+        list_del(&ip_node->list);
+        kfree(ip_node);
     }
 
-    list_for_each_entry_safe(node, tmp, &blocked_dest_ip_list, list){
-        list_del(&node->list);
-        kfree(node);
+    list_for_each_entry_safe(port_node, port_tmp, &blocked_port_list, list){
+        list_del(&port_node->list);
+        kfree(port_node);
     }
 };
 
@@ -55,7 +77,8 @@ static void free_lists(void){
 //---------------NETFILTER HOOKS----------------
 static unsigned int hook_func(void *priv, struct sk_buff *skb, const struct nf_hook_state *state){
     struct iphdr *ip_header;
-    struct blocked_ip *node;
+    struct blocked_ip *ip_node;
+    struct blocked_port *port_node;
 
     if(!skb){
         return NF_ACCEPT;
@@ -69,21 +92,43 @@ static unsigned int hook_func(void *priv, struct sk_buff *skb, const struct nf_h
     __be32 src_ip = ip_header->saddr;
     __be32 dest_ip = ip_header->daddr;
 
-    //--------drop ip's---------
-    list_for_each_entry(node, &blocked_src_ip_list, list){
-        if(src_ip == node->ip){
-            printk(KERN_INFO "NETFILTER: Packet from: %pI4 DROPPED!\n", &src_ip);
+    //--------drop ips---------
+    list_for_each_entry(ip_node, &blocked_ip_list, list){
+        if(src_ip == ip_node->ip || dest_ip == ip_node->ip){
+            printk(KERN_INFO "NETFILTER: Packet from ip: %pI4 to ip: %pI4 DROPPED!\n", &src_ip, &dest_ip);
             return NF_DROP;
         }
     }
 
-    list_for_each_entry(node, &blocked_dest_ip_list, list){
-        if(src_ip == node->ip){
-            printk(KERN_INFO "NETFILTER: Packet to: %pI4 DROPPED!\n", &src_ip);
-            return NF_DROP;
+    //--------drop ports---------
+    if(ip_header->protocol == IPPROTO_TCP){
+        struct tcphdr *tcp_header = tcp_hdr(skb);
+
+        u16 src_port = ntohs(tcp_header->source);
+        u16 dest_port = ntohs(tcp_header->dest);
+
+        list_for_each_entry(port_node, &blocked_port_list, list){
+            if(src_port == port_node->port || dest_port == port_node->port){
+                printk(KERN_INFO "NETFILTER: Packet from port: %u to port: %u DROPPED!\n", src_port, dest_port);
+                return NF_DROP;
+            }
         }
+
     }
 
+    if(ip_header->protocol == IPPROTO_UDP){
+        struct udphdr *udp_header = udp_hdr(skb);
+
+        u16 src_port = ntohs(udp_header->source);
+        u16 dest_port = ntohs(udp_header->dest);
+
+        list_for_each_entry(port_node, &blocked_port_list, list){
+            if(src_port == port_node->port || dest_port == port_node->port){
+                printk(KERN_INFO "NETFILTER: Packet from port: %u to port: %u DROPPED!\n", &src_port, &dest_port);
+                return NF_DROP;
+            }
+        }
+    }
 
     printk(KERN_INFO "NETFILTER: Packet from: %pI4 to: %pI4 accepted\n", &src_ip, &dest_ip);
     return NF_ACCEPT;
@@ -97,28 +142,14 @@ static struct nf_hook_ops my_nho = {
 };
 
 
-static unsigned int port_hook_func(void *priv, struct sk_buff *skb, const struct nf_hook_state *state){
-    
-    struct tcphdr *tcp_header;
-    struct udphdr *udp_header;
-    struct iphdr *ip_header;
-
-    if(!skb){
-        return NF_ACCEPT;
-    }
-
-    return NF_ACCEPT;
-
-};
-
-
 //---------------MODULE INIT/EXIT--------------------
 static int __init my_init(void){
     nf_register_net_hook(&init_net, &my_nho);
 
-    add_blocked_ip("127.0.0.1", &blocked_src_ip_list);
-    add_blocked_ip("8.8.8.8", &blocked_dest_ip_list);
-
+    // add_blocked_ip("127.0.0.1", &blocked_ip_list);
+    add_blocked_ip("8.8.8.8", &blocked_ip_list);
+    add_blocked_port(200, &blocked_port_list);
+    add_blocked_port(334, &blocked_port_list);
 
     printk(KERN_INFO "NETFILTER: hook registered\n");
     return 0;
